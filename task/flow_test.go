@@ -11,6 +11,8 @@ import (
 )
 
 func TestFlowRun(t *testing.T) {
+	t.Parallel()
+
 	src := task.SourceFromFn(func(ctx context.Context, out chan<- string) error {
 		out <- "item1"
 		out <- "item2"

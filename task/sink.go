@@ -2,6 +2,8 @@ package task
 
 import (
 	"context"
+
+	"golang.org/x/sync/errgroup"
 )
 
 type Sink[S any] struct {
@@ -21,4 +23,17 @@ func (s *Sink[S]) AsTask() Task[S, struct{}] {
 func (s *Sink[S]) Run(ctx context.Context, in <-chan S, out chan<- struct{}) error {
 	defer close(out)
 	return s.run(ctx, in)
+}
+
+func ConcurrentSink[S any](ss []*Sink[S]) *Sink[S] {
+	return SinkFromFn(func(ctx context.Context, in <-chan S) error {
+		grp, ctx := errgroup.WithContext(ctx)
+		for _, s := range ss {
+			src := s
+			grp.Go(func() error {
+				return src.run(ctx, in)
+			})
+		}
+		return grp.Wait()
+	})
 }
