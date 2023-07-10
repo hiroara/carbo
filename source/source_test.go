@@ -1,4 +1,4 @@
-package task_test
+package source_test
 
 import (
 	"context"
@@ -7,10 +7,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/hiroara/carbo/task"
+	"github.com/hiroara/carbo/source"
 )
 
-func createSourceFn(outputs []string) task.SourceFn[string] {
+func createSourceFn(outputs []string) source.SourceFn[string] {
 	return func(ctx context.Context, out chan<- string) error {
 		for _, item := range outputs {
 			out <- item
@@ -22,7 +22,7 @@ func createSourceFn(outputs []string) task.SourceFn[string] {
 func TestSourceRun(t *testing.T) {
 	t.Parallel()
 
-	src := task.SourceFromFn(createSourceFn([]string{"item1", "item2"}))
+	src := source.FromFn(createSourceFn([]string{"item1", "item2"}))
 
 	in := make(chan struct{})
 	out := make(chan string, 2)
@@ -38,9 +38,9 @@ func TestSourceRun(t *testing.T) {
 func TestConcurrentSource(t *testing.T) {
 	t.Parallel()
 
-	src := task.ConcurrentSource([]*task.Source[string]{
-		task.SourceFromFn(createSourceFn([]string{"item1", "item2"})),
-		task.SourceFromFn(createSourceFn([]string{"item3", "item4"})),
+	src := source.Concurrent([]*source.Source[string]{
+		source.FromFn(createSourceFn([]string{"item1", "item2"})),
+		source.FromFn(createSourceFn([]string{"item3", "item4"})),
 	})
 
 	in := make(chan struct{})

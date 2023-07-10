@@ -1,4 +1,4 @@
-package task_test
+package pipe_test
 
 import (
 	"context"
@@ -7,14 +7,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/hiroara/carbo/task"
+	"github.com/hiroara/carbo/pipe"
 )
 
 func double(s string) string {
 	return s + s
 }
 
-func createPipeFn(fn func(string) string) (task.PipeFn[string, string], *bool) {
+func createPipeFn(fn func(string) string) (pipe.PipeFn[string, string], *bool) {
 	called := false
 	pipeFn := func(ctx context.Context, in <-chan string, out chan<- string) error {
 		called = true
@@ -30,7 +30,7 @@ func TestPipeRun(t *testing.T) {
 	t.Parallel()
 
 	pipeFn, _ := createPipeFn(double)
-	pipe := task.PipeFromFn(pipeFn)
+	pipe := pipe.FromFn(pipeFn)
 
 	in := make(chan string, 2)
 	out := make(chan string, 2)
@@ -48,7 +48,7 @@ func TestPipeRun(t *testing.T) {
 func TestConcurrentPipe(t *testing.T) {
 	t.Parallel()
 
-	assertConcurrentPipe := func(pipe *task.Pipe[string, string]) {
+	assertConcurrentPipe := func(pipe *pipe.Pipe[string, string]) {
 		in := make(chan string, 2)
 		out := make(chan string, 2)
 		in <- "item1"
@@ -65,14 +65,14 @@ func TestConcurrentPipe(t *testing.T) {
 		assert.ElementsMatch(t, []string{"item1item1", "item2item2"}, outputs)
 	}
 
-	t.Run("ConcurrentPipe", func(t *testing.T) {
+	t.Run("Concurrent", func(t *testing.T) {
 		t.Parallel()
 
 		pipeFn1, called1 := createPipeFn(double)
 		pipeFn2, called2 := createPipeFn(double)
-		pipe := task.ConcurrentPipe([]*task.Pipe[string, string]{
-			task.PipeFromFn(pipeFn1),
-			task.PipeFromFn(pipeFn2),
+		pipe := pipe.Concurrent([]*pipe.Pipe[string, string]{
+			pipe.FromFn(pipeFn1),
+			pipe.FromFn(pipeFn2),
 		})
 
 		assertConcurrentPipe(pipe)
@@ -81,11 +81,11 @@ func TestConcurrentPipe(t *testing.T) {
 		assert.True(t, *called2)
 	})
 
-	t.Run("ConcurrentPipeFromFn", func(t *testing.T) {
+	t.Run("ConcurrentFromFn", func(t *testing.T) {
 		t.Parallel()
 
 		fn, _ := createPipeFn(double)
-		pipe := task.ConcurrentPipeFromFn(fn, 2)
+		pipe := pipe.ConcurrentFromFn(fn, 2)
 
 		assertConcurrentPipe(pipe)
 	})

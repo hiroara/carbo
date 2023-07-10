@@ -1,16 +1,15 @@
-package task_test
+package sink_test
 
 import (
 	"context"
 	"testing"
 
+	"github.com/hiroara/carbo/sink"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/hiroara/carbo/task"
 )
 
-func createArraySink() (task.SinkFn[string], *[]string, *bool) {
+func createArraySink() (sink.SinkFn[string], *[]string, *bool) {
 	items := make([]string, 0)
 	called := false
 	sinkFn := func(ctx context.Context, in <-chan string) error {
@@ -27,7 +26,7 @@ func TestSinkRun(t *testing.T) {
 	t.Parallel()
 
 	sinkFn, items, _ := createArraySink()
-	sink := task.SinkFromFn(sinkFn)
+	sink := sink.FromFn(sinkFn)
 
 	in := make(chan string, 2)
 	out := make(chan struct{}, 1)
@@ -47,9 +46,9 @@ func TestConcurrentSink(t *testing.T) {
 	sinkFn1, items1, called1 := createArraySink()
 	sinkFn2, items2, called2 := createArraySink()
 
-	sink := task.ConcurrentSink([]*task.Sink[string]{
-		task.SinkFromFn(sinkFn1),
-		task.SinkFromFn(sinkFn2),
+	sink := sink.Concurrent([]*sink.Sink[string]{
+		sink.FromFn(sinkFn1),
+		sink.FromFn(sinkFn2),
 	})
 
 	in := make(chan string, 4)
