@@ -1,4 +1,4 @@
-package task_test
+package flow_test
 
 import (
 	"context"
@@ -10,6 +10,7 @@ import (
 	"github.com/hiroara/carbo/sink"
 	"github.com/hiroara/carbo/source"
 	"github.com/hiroara/carbo/task"
+	"github.com/hiroara/carbo/flow"
 )
 
 func TestFlowRun(t *testing.T) {
@@ -29,7 +30,7 @@ func TestFlowRun(t *testing.T) {
 		return nil
 	})
 
-	flow := task.FlowFromTask(task.Connect(src.AsTask(), sink.AsTask(), 1))
+	flow := flow.FromTask(task.Connect(src.AsTask(), sink.AsTask(), 1))
 	err := flow.Run(context.Background())
 	require.NoError(t, err)
 

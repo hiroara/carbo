@@ -1,12 +1,16 @@
-package task
+package flow
 
-import "context"
+import (
+	"context"
+
+	"github.com/hiroara/carbo/task"
+)
 
 type Flow struct {
-	task Task[struct{}, struct{}]
+	task task.Task[struct{}, struct{}]
 }
 
-func FlowFromTask(task Task[struct{}, struct{}]) *Flow {
+func FromTask(task task.Task[struct{}, struct{}]) *Flow {
 	return &Flow{task: task}
 }
 
