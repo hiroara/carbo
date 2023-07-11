@@ -39,3 +39,11 @@ func Concurrent[S any](ss []*Sink[S]) *Sink[S] {
 		return grp.Wait()
 	})
 }
+
+func ConcurrentFromFn[S any](fn SinkFn[S], concurrency int) *Sink[S] {
+	ss := make([]*Sink[S], concurrency)
+	for i := range ss {
+		ss[i] = FromFn(fn)
+	}
+	return Concurrent(ss)
+}

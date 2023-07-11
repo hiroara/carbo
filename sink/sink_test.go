@@ -43,27 +43,44 @@ func TestSinkRun(t *testing.T) {
 func TestConcurrentSink(t *testing.T) {
 	t.Parallel()
 
-	sinkFn1, items1, called1 := createArraySink()
-	sinkFn2, items2, called2 := createArraySink()
+	runSink := func(s *sink.Sink[string]) error {
+		in := make(chan string, 4)
+		out := make(chan struct{})
+		in <- "item1"
+		in <- "item2"
+		in <- "item3"
+		in <- "item4"
+		close(in)
 
-	sink := sink.Concurrent([]*sink.Sink[string]{
-		sink.FromFn(sinkFn1),
-		sink.FromFn(sinkFn2),
+		return s.Run(context.Background(), in, out)
+	}
+
+	t.Run("Concurrent", func(t *testing.T) {
+		sinkFn1, items1, called1 := createArraySink()
+		sinkFn2, items2, called2 := createArraySink()
+
+		s := sink.Concurrent([]*sink.Sink[string]{
+			sink.FromFn(sinkFn1),
+			sink.FromFn(sinkFn2),
+		})
+
+		err := runSink(s)
+		require.NoError(t, err)
+
+		items := append(*items1, *items2...)
+		assert.True(t, *called1)
+		assert.True(t, *called2)
+		assert.ElementsMatch(t, []string{"item1", "item2", "item3", "item4"}, items)
 	})
 
-	in := make(chan string, 4)
-	out := make(chan struct{})
-	in <- "item1"
-	in <- "item2"
-	in <- "item3"
-	in <- "item4"
-	close(in)
+	t.Run("ConcurrentFromFn", func(t *testing.T) {
+		sinkFn, items, called := createArraySink()
 
-	err := sink.Run(context.Background(), in, out)
-	require.NoError(t, err)
+		s := sink.ConcurrentFromFn(sinkFn, 2)
 
-	items := append(*items1, *items2...)
-	assert.True(t, *called1)
-	assert.True(t, *called2)
-	assert.ElementsMatch(t, []string{"item1", "item2", "item3", "item4"}, items)
+		err := runSink(s)
+		require.NoError(t, err)
+		assert.True(t, *called)
+		assert.ElementsMatch(t, []string{"item1", "item2", "item3", "item4"}, *items)
+	})
 }
