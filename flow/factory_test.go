@@ -17,27 +17,44 @@ type Config struct {
 	Value string `yaml:"value"`
 }
 
-func TestFactoryStart(t *testing.T) {
-	t.Parallel()
+func createFactoryFn() (flow.FactoryFn[testutils.Config], *testutils.Config) {
+	var flowCfg testutils.Config
 
-	var flowCfg *testutils.Config
-
-	fac := flow.NewFactory(func(cfg *testutils.Config) *flow.Flow {
-		flowCfg = cfg
+	fn := func(cfg *testutils.Config) *flow.Flow {
+		flowCfg = *cfg
 		src := source.FromSlice([]string{"item1", "item2"})
 
 		items := make([]string, 0)
-		sink := sink.ElementWise(func(str string) error {
-			items = append(items, str)
-			return nil
-		})
+		sink := sink.ToSlice(&items)
 		return flow.FromTask(task.Connect(src.AsTask(), sink.AsTask(), 1))
-	})
+	}
 
-	assert.Nil(t, flowCfg)
+	return fn, &flowCfg
+}
+
+func TestFactoryStart(t *testing.T) {
+	t.Parallel()
+
+	fn, cfg := createFactoryFn()
+	fac := flow.NewFactory(fn)
+
+	assert.Zero(t, *cfg)
 
 	err := fac.Start(context.Background(), "../testdata/config.yaml")
 	require.NoError(t, err)
 
-	assert.Equal(t, "thisisstring", flowCfg.StringField) // Decoded config is passed to the factory function
+	assert.Equal(t, "thisisstring", cfg.StringField) // Decoded config is passed to the factory function
+}
+
+func TestRun(t *testing.T) {
+	t.Parallel()
+
+	fn, cfg := createFactoryFn()
+
+	assert.Zero(t, *cfg)
+
+	err := flow.Run(context.Background(), fn, "../testdata/config.yaml")
+	require.NoError(t, err)
+
+	assert.Equal(t, "thisisstring", cfg.StringField) // Decoded config is passed to the factory function
 }

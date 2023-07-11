@@ -25,3 +25,7 @@ func (f *Factory[C]) Start(ctx context.Context, cfgPath string) error {
 
 	return f.build(&cfg).Run(ctx)
 }
+
+func Run[C any](ctx context.Context, fn FactoryFn[C], configPath string) error {
+	return NewFactory(fn).Start(ctx, configPath)
+}
