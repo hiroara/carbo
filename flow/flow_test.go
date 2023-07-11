@@ -7,26 +7,20 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/hiroara/carbo/flow"
 	"github.com/hiroara/carbo/sink"
 	"github.com/hiroara/carbo/source"
 	"github.com/hiroara/carbo/task"
-	"github.com/hiroara/carbo/flow"
 )
 
 func TestFlowRun(t *testing.T) {
 	t.Parallel()
 
-	src := source.FromFn(func(ctx context.Context, out chan<- string) error {
-		out <- "item1"
-		out <- "item2"
-		return nil
-	})
+	src := source.FromSlice([]string{"item1", "item2"})
 
 	items := make([]string, 0)
-	sink := sink.FromFn(func(ctx context.Context, in <-chan string) error {
-		for i := range in {
-			items = append(items, i)
-		}
+	sink := sink.ElementWise(func(str string) error {
+		items = append(items, str)
 		return nil
 	})
 
