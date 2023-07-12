@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+option go_package = "github.com/hiroara/carbo/pb";
+
+service Communicator {
+  rpc BatchPull(BatchPullRequest) returns (BatchPullResponse) {}
+}
+
+message BatchPullRequest {
+  int32 limit = 1;
+}
+
+message BatchPullResponse {}
