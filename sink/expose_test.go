@@ -28,8 +28,10 @@ func TestExpose(t *testing.T) {
 	lis, err := net.Listen("unix", sock)
 	require.NoError(t, err)
 
-	src := source.FromSlice([]string{"item1", "item2"})
-	exp := sink.Expose(lis, marshal.Raw[string], 2)
+	data := []string{"item1", "item2"}
+	ms := marshal.Raw[string]()
+	src := source.FromSlice(data)
+	exp := sink.Expose(lis, ms, 2)
 	conn := task.Connect(src.AsTask(), exp.AsTask(), 2)
 
 	grp, ctx := errgroup.WithContext(context.Background())
@@ -57,9 +59,10 @@ func TestExpose(t *testing.T) {
 	require.NoError(t, grp.Wait())
 	require.Len(t, resp.Messages, 2)
 
-	var raw marshal.RawMessage[string]
-	raw.UnmarshalBinary(resp.Messages[0].Value)
-	assert.Equal(t, "item1", raw.Value())
-	raw.UnmarshalBinary(resp.Messages[1].Value)
-	assert.Equal(t, "item2", raw.Value())
+	for i, msg := range resp.Messages {
+		item, err := ms.Unmarshal(msg.Value)
+		if assert.NoError(t, err) {
+			assert.Equal(t, data[i], item)
+		}
+	}
 }

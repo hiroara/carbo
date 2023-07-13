@@ -6,32 +6,27 @@ import (
 
 	"google.golang.org/grpc"
 
-	"github.com/hiroara/carbo/messaging/message"
 	"github.com/hiroara/carbo/pb"
 )
 
-type Server[S any] struct {
+type Server struct {
 	pb.UnimplementedCommunicatorServer
 	listener  net.Listener
-	buffer    chan message.Message[S]
+	buffer    chan []byte
 	completed chan struct{}
 }
 
-func New[S any](lis net.Listener, buffer int) *Server[S] {
-	buf := make(chan message.Message[S], buffer)
-	return &Server[S]{listener: lis, buffer: buf, completed: make(chan struct{})}
+func New(lis net.Listener, buffer int) *Server {
+	buf := make(chan []byte, buffer)
+	return &Server{listener: lis, buffer: buf, completed: make(chan struct{})}
 }
 
-func (s *Server[S]) BatchPull(ctx context.Context, req *pb.BatchPullRequest) (*pb.BatchPullResponse, error) {
+func (s *Server) BatchPull(ctx context.Context, req *pb.BatchPullRequest) (*pb.BatchPullResponse, error) {
 	limit := sanitizeLimit(req.Limit)
 	closed := true
 	msgs := make([]*pb.Message, 0, limit)
-	for el := range s.buffer {
-		dat, err := el.MarshalBinary()
-		if err != nil {
-			return nil, err
-		}
-		msgs = append(msgs, &pb.Message{Value: dat})
+	for bs := range s.buffer {
+		msgs = append(msgs, &pb.Message{Value: bs})
 		if len(msgs) == limit {
 			closed = false
 			break
@@ -43,11 +38,11 @@ func (s *Server[S]) BatchPull(ctx context.Context, req *pb.BatchPullRequest) (*p
 	return &pb.BatchPullResponse{Messages: msgs, Closed: closed}, nil
 }
 
-func (s *Server[S]) Feed(msg message.Message[S]) {
-	s.buffer <- msg
+func (s *Server) Feed(bs []byte) {
+	s.buffer <- bs
 }
 
-func (s *Server[S]) Run(ctx context.Context) error {
+func (s *Server) Run(ctx context.Context) error {
 	srv := grpc.NewServer()
 
 	go func() {

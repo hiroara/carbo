@@ -17,6 +17,8 @@ import (
 func TestServer(t *testing.T) {
 	t.Parallel()
 
+	ms := marshal.Raw[string]()
+
 	dir := t.TempDir()
 	sock := filepath.Join(dir, "srv.sock")
 	lis, err := net.Listen("unix", sock)
@@ -25,15 +27,21 @@ func TestServer(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	grp, ctx := errgroup.WithContext(ctx)
 
-	srv := server.New[string](lis, 2)
+	srv := server.New(lis, 2)
 	grp.Go(func() error { return srv.Run(ctx) })
 
 	// Input
 	grp.Go(func() error {
 		defer cancel()
-		srv.Feed(marshal.Raw("message1"))
-		srv.Feed(marshal.Raw("message2"))
-		srv.Feed(marshal.Raw("message3"))
+		bs, err := ms.Marshal("message1")
+		require.NoError(t, err)
+		srv.Feed(bs)
+		bs, err = ms.Marshal("message2")
+		require.NoError(t, err)
+		srv.Feed(bs)
+		bs, err = ms.Marshal("message3")
+		require.NoError(t, err)
+		srv.Feed(bs)
 		return nil
 	})
 
@@ -45,9 +53,9 @@ func TestServer(t *testing.T) {
 			return err
 		}
 		for _, msg := range resp.Messages {
-			raw := &marshal.RawMessage[string]{}
-			require.NoError(t, raw.UnmarshalBinary(msg.Value))
-			out = append(out, raw.Value())
+			item, err := ms.Unmarshal(msg.Value)
+			require.NoError(t, err)
+			out = append(out, item)
 		}
 		return nil
 	})

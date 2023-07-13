@@ -3,38 +3,30 @@ package marshal
 import (
 	"bytes"
 	"encoding/gob"
-
-	"github.com/hiroara/carbo/messaging/message"
 )
 
-type GobMessage[S any] struct {
-	value S
+type gobSpec[S any] struct{}
+
+func Gob[S any]() Spec[S] {
+	return &gobSpec[S]{}
 }
 
-type GobMarshal struct{}
-
-func Gob[S any](v S) message.Message[S] {
-	return &GobMessage[S]{value: v}
-}
-
-func (msg *GobMessage[S]) MarshalBinary() ([]byte, error) {
+func (g *gobSpec[S]) Marshal(v S) ([]byte, error) {
 	buf := bytes.NewBuffer(nil)
-	err := gob.NewEncoder(buf).Encode(msg.value)
+	err := gob.NewEncoder(buf).Encode(v)
 	if err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil
 }
 
-func (msg *GobMessage[S]) UnmarshalBinary(data []byte) error {
+func (g *gobSpec[S]) Unmarshal(data []byte) (S, error) {
+	var v S
 	buf := bytes.NewBuffer(data)
-	err := gob.NewDecoder(buf).Decode(&msg.value)
+	err := gob.NewDecoder(buf).Decode(&v)
 	if err != nil {
-		return err
+		var zero S
+		return zero, err
 	}
-	return nil
-}
-
-func (msg *GobMessage[S]) Value() S {
-	return msg.value
+	return v, nil
 }

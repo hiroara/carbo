@@ -11,17 +11,12 @@ import (
 
 func TestRaw(t *testing.T) {
 	data := "dummy data"
-	msg := marshal.Raw(data)
-	raw, ok := msg.(*marshal.RawMessage[string])
-	assert.True(t, ok)
-	assert.Equal(t, data, raw.Value())
-
-	bs, err := raw.MarshalBinary()
+	r := marshal.Raw[string]()
+	bs, err := r.Marshal(data)
 	require.NoError(t, err)
 	assert.Equal(t, data, string(bs))
 
-	anotherMsg := &marshal.RawMessage[string]{}
-	err = anotherMsg.UnmarshalBinary(bs)
+	d, err := r.Unmarshal(bs)
 	require.NoError(t, err)
-	assert.Equal(t, data, anotherMsg.Value())
+	assert.Equal(t, data, d)
 }

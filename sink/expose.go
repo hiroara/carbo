@@ -12,14 +12,14 @@ import (
 )
 
 type ExposeOp[S any] struct {
-	server     *server.Server[S]
-	marshaller marshal.Marshaller[S]
+	server      *server.Server
+	marshalSpec marshal.Spec[S]
 }
 
-func Expose[S any](lis net.Listener, m marshal.Marshaller[S], buffer int) *ExposeOp[S] {
+func Expose[S any](lis net.Listener, m marshal.Spec[S], buffer int) *ExposeOp[S] {
 	return &ExposeOp[S]{
-		server:     server.New[S](lis, buffer),
-		marshaller: m,
+		server:      server.New(lis, buffer),
+		marshalSpec: m,
 	}
 }
 
@@ -31,7 +31,11 @@ func (op *ExposeOp[S]) AsTask() task.Task[S, struct{}] {
 		grp.Go(func() error {
 			defer cancel()
 			for el := range in {
-				op.server.Feed(op.marshaller(el))
+				bs, err := op.marshalSpec.Marshal(el)
+				if err != nil {
+					return err
+				}
+				op.server.Feed(bs)
 			}
 			return nil
 		})
