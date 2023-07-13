@@ -15,6 +15,8 @@ import (
 )
 
 func TestServer(t *testing.T) {
+	t.Parallel()
+
 	dir := t.TempDir()
 	sock := filepath.Join(dir, "srv.sock")
 	lis, err := net.Listen("unix", sock)
