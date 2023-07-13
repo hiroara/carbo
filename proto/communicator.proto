@@ -10,4 +10,11 @@ message BatchPullRequest {
   int32 limit = 1;
 }
 
-message BatchPullResponse {}
+message BatchPullResponse {
+  repeated Message messages  = 1;
+  bool closed = 2;
+}
+
+message Message {
+  bytes value = 1;
+}
