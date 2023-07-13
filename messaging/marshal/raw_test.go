@@ -14,7 +14,7 @@ func TestRaw(t *testing.T) {
 	msg := marshal.Raw(data)
 	raw, ok := msg.(*marshal.RawMessage[string])
 	assert.True(t, ok)
-	assert.Equal(t, data, raw.Value)
+	assert.Equal(t, data, raw.Value())
 
 	bs, err := raw.MarshalBinary()
 	require.NoError(t, err)
@@ -23,5 +23,5 @@ func TestRaw(t *testing.T) {
 	anotherMsg := &marshal.RawMessage[string]{}
 	err = anotherMsg.UnmarshalBinary(bs)
 	require.NoError(t, err)
-	assert.Equal(t, data, anotherMsg.Value)
+	assert.Equal(t, data, anotherMsg.Value())
 }

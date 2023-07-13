@@ -59,7 +59,7 @@ func TestExpose(t *testing.T) {
 
 	var raw marshal.RawMessage[string]
 	raw.UnmarshalBinary(resp.Messages[0].Value)
-	assert.Equal(t, "item1", raw.Value)
+	assert.Equal(t, "item1", raw.Value())
 	raw.UnmarshalBinary(resp.Messages[1].Value)
-	assert.Equal(t, "item2", raw.Value)
+	assert.Equal(t, "item2", raw.Value())
 }

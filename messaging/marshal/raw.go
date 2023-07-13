@@ -9,18 +9,22 @@ type BytesCompatible interface {
 }
 
 type RawMessage[S BytesCompatible] struct {
-	Value S
+	value S
 }
 
-func Raw[S BytesCompatible](v S) message.Message {
-	return &RawMessage[S]{Value: v}
+func Raw[S BytesCompatible](v S) message.Message[S] {
+	return &RawMessage[S]{value: v}
 }
 
 func (msg *RawMessage[S]) MarshalBinary() ([]byte, error) {
-	return []byte(msg.Value), nil
+	return []byte(msg.value), nil
 }
 
 func (msg *RawMessage[S]) UnmarshalBinary(data []byte) error {
-	msg.Value = S(data)
+	msg.value = S(data)
 	return nil
+}
+
+func (msg *RawMessage[S]) Value() S {
+	return msg.value
 }

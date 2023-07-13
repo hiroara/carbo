@@ -12,13 +12,13 @@ import (
 )
 
 type ExposeOp[S any] struct {
-	server     *server.Server
+	server     *server.Server[S]
 	marshaller marshal.Marshaller[S]
 }
 
 func Expose[S any](lis net.Listener, m marshal.Marshaller[S], buffer int) *ExposeOp[S] {
 	return &ExposeOp[S]{
-		server:     server.New(lis, buffer),
+		server:     server.New[S](lis, buffer),
 		marshaller: m,
 	}
 }

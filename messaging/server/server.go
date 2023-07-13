@@ -10,19 +10,19 @@ import (
 	"github.com/hiroara/carbo/pb"
 )
 
-type Server struct {
+type Server[S any] struct {
 	pb.UnimplementedCommunicatorServer
 	listener  net.Listener
-	buffer    chan message.Message
+	buffer    chan message.Message[S]
 	completed chan struct{}
 }
 
-func New(lis net.Listener, buffer int) *Server {
-	buf := make(chan message.Message, buffer)
-	return &Server{listener: lis, buffer: buf, completed: make(chan struct{})}
+func New[S any](lis net.Listener, buffer int) *Server[S] {
+	buf := make(chan message.Message[S], buffer)
+	return &Server[S]{listener: lis, buffer: buf, completed: make(chan struct{})}
 }
 
-func (s *Server) BatchPull(ctx context.Context, req *pb.BatchPullRequest) (*pb.BatchPullResponse, error) {
+func (s *Server[S]) BatchPull(ctx context.Context, req *pb.BatchPullRequest) (*pb.BatchPullResponse, error) {
 	limit := sanitizeLimit(req.Limit)
 	closed := true
 	msgs := make([]*pb.Message, 0, limit)
@@ -43,11 +43,11 @@ func (s *Server) BatchPull(ctx context.Context, req *pb.BatchPullRequest) (*pb.B
 	return &pb.BatchPullResponse{Messages: msgs, Closed: closed}, nil
 }
 
-func (s *Server) Feed(msg message.Message) {
+func (s *Server[S]) Feed(msg message.Message[S]) {
 	s.buffer <- msg
 }
 
-func (s *Server) Run(ctx context.Context) error {
+func (s *Server[S]) Run(ctx context.Context) error {
 	srv := grpc.NewServer()
 
 	go func() {

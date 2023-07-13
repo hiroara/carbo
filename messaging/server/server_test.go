@@ -25,7 +25,7 @@ func TestServer(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	grp, ctx := errgroup.WithContext(ctx)
 
-	srv := server.New(lis, 2)
+	srv := server.New[string](lis, 2)
 	grp.Go(func() error { return srv.Run(ctx) })
 
 	// Input
@@ -47,7 +47,7 @@ func TestServer(t *testing.T) {
 		for _, msg := range resp.Messages {
 			raw := &marshal.RawMessage[string]{}
 			require.NoError(t, raw.UnmarshalBinary(msg.Value))
-			out = append(out, raw.Value)
+			out = append(out, raw.Value())
 		}
 		return nil
 	})

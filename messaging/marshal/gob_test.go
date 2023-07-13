@@ -18,7 +18,7 @@ func TestGob(t *testing.T) {
 	msg := marshal.Gob(data)
 	raw, ok := msg.(*marshal.GobMessage[*dummyStruct])
 	assert.True(t, ok)
-	assert.Equal(t, data, raw.Value)
+	assert.Equal(t, data, raw.Value())
 
 	bs, err := raw.MarshalBinary()
 	require.NoError(t, err)
@@ -27,5 +27,5 @@ func TestGob(t *testing.T) {
 	anotherMsg := &marshal.GobMessage[*dummyStruct]{}
 	err = anotherMsg.UnmarshalBinary(bs)
 	require.NoError(t, err)
-	assert.Equal(t, data, anotherMsg.Value)
+	assert.Equal(t, data, anotherMsg.Value())
 }

@@ -8,18 +8,18 @@ import (
 )
 
 type GobMessage[S any] struct {
-	Value S
+	value S
 }
 
 type GobMarshal struct{}
 
-func Gob[S any](v S) message.Message {
-	return &GobMessage[S]{Value: v}
+func Gob[S any](v S) message.Message[S] {
+	return &GobMessage[S]{value: v}
 }
 
 func (msg *GobMessage[S]) MarshalBinary() ([]byte, error) {
 	buf := bytes.NewBuffer(nil)
-	err := gob.NewEncoder(buf).Encode(msg.Value)
+	err := gob.NewEncoder(buf).Encode(msg.value)
 	if err != nil {
 		return nil, err
 	}
@@ -28,9 +28,13 @@ func (msg *GobMessage[S]) MarshalBinary() ([]byte, error) {
 
 func (msg *GobMessage[S]) UnmarshalBinary(data []byte) error {
 	buf := bytes.NewBuffer(data)
-	err := gob.NewDecoder(buf).Decode(&msg.Value)
+	err := gob.NewDecoder(buf).Decode(&msg.value)
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+func (msg *GobMessage[S]) Value() S {
+	return msg.value
 }
