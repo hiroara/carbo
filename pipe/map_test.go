@@ -2,6 +2,7 @@ package pipe_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/hiroara/carbo/flow"
@@ -14,10 +15,12 @@ import (
 )
 
 func TestMap(t *testing.T) {
+	t.Parallel()
+
 	src := source.FromSlice([]string{"item1", "item2"})
 
-	m := pipe.Map(func(s string) string {
-		return s + s
+	m := pipe.Map(func(s string) (string, error) {
+		return s + s, nil
 	})
 
 	runFlowWithMap := func(mappingTask task.Task[string, string]) ([]string, error) {
@@ -35,7 +38,19 @@ func TestMap(t *testing.T) {
 		return out, nil
 	}
 
+	t.Run("ErrorCase", func(t *testing.T) {
+		t.Parallel()
+
+		m := pipe.Map(func(s string) (string, error) {
+			return "", errors.New("error case")
+		})
+		_, err := runFlowWithMap(m.AsTask())
+		assert.Error(t, err)
+	})
+
 	t.Run("NoConcurrency", func(t *testing.T) {
+		t.Parallel()
+
 		out, err := runFlowWithMap(m.AsTask())
 		require.NoError(t, err)
 
@@ -43,6 +58,8 @@ func TestMap(t *testing.T) {
 	})
 
 	t.Run("Concurrent", func(t *testing.T) {
+		t.Parallel()
+
 		out, err := runFlowWithMap(m.Concurrent(2).AsTask())
 		require.NoError(t, err)
 
