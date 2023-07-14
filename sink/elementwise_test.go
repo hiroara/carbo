@@ -61,6 +61,6 @@ func TestElementWise(t *testing.T) {
 		err := runFlowWithSink(op.Concurrent(2).AsTask())
 		require.NoError(t, err)
 
-		assert.Equal(t, []string{"item1", "item2"}, out)
+		assert.ElementsMatch(t, []string{"item1", "item2"}, out)
 	})
 }

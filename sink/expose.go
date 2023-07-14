@@ -26,16 +26,15 @@ func Expose[S any](lis net.Listener, m marshal.Spec[S], buffer int) *ExposeOp[S]
 func (op *ExposeOp[S]) AsTask() task.Task[S, struct{}] {
 	return FromFn(func(ctx context.Context, in <-chan S) error {
 		grp, ctx := errgroup.WithContext(ctx)
-		ctx, cancel := context.WithCancel(ctx)
 		grp.Go(func() error { return op.server.Run(ctx) })
 		grp.Go(func() error {
-			defer cancel()
+			defer op.server.Close()
 			for el := range in {
 				bs, err := op.marshalSpec.Marshal(el)
 				if err != nil {
 					return err
 				}
-				op.server.Feed(bs)
+				op.server.Feed(ctx, bs)
 			}
 			return nil
 		})

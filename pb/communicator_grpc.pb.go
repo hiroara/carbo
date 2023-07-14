@@ -19,14 +19,16 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Communicator_BatchPull_FullMethodName = "/Communicator/BatchPull"
+	Communicator_FillBatch_FullMethodName = "/Communicator/FillBatch"
+	Communicator_GetBatch_FullMethodName  = "/Communicator/GetBatch"
 )
 
 // CommunicatorClient is the client API for Communicator service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type CommunicatorClient interface {
-	BatchPull(ctx context.Context, in *BatchPullRequest, opts ...grpc.CallOption) (*BatchPullResponse, error)
+	FillBatch(ctx context.Context, in *FillBatchRequest, opts ...grpc.CallOption) (*FillBatchResponse, error)
+	GetBatch(ctx context.Context, in *GetBatchRequest, opts ...grpc.CallOption) (*GetBatchResponse, error)
 }
 
 type communicatorClient struct {
@@ -37,9 +39,18 @@ func NewCommunicatorClient(cc grpc.ClientConnInterface) CommunicatorClient {
 	return &communicatorClient{cc}
 }
 
-func (c *communicatorClient) BatchPull(ctx context.Context, in *BatchPullRequest, opts ...grpc.CallOption) (*BatchPullResponse, error) {
-	out := new(BatchPullResponse)
-	err := c.cc.Invoke(ctx, Communicator_BatchPull_FullMethodName, in, out, opts...)
+func (c *communicatorClient) FillBatch(ctx context.Context, in *FillBatchRequest, opts ...grpc.CallOption) (*FillBatchResponse, error) {
+	out := new(FillBatchResponse)
+	err := c.cc.Invoke(ctx, Communicator_FillBatch_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *communicatorClient) GetBatch(ctx context.Context, in *GetBatchRequest, opts ...grpc.CallOption) (*GetBatchResponse, error) {
+	out := new(GetBatchResponse)
+	err := c.cc.Invoke(ctx, Communicator_GetBatch_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +61,8 @@ func (c *communicatorClient) BatchPull(ctx context.Context, in *BatchPullRequest
 // All implementations must embed UnimplementedCommunicatorServer
 // for forward compatibility
 type CommunicatorServer interface {
-	BatchPull(context.Context, *BatchPullRequest) (*BatchPullResponse, error)
+	FillBatch(context.Context, *FillBatchRequest) (*FillBatchResponse, error)
+	GetBatch(context.Context, *GetBatchRequest) (*GetBatchResponse, error)
 	mustEmbedUnimplementedCommunicatorServer()
 }
 
@@ -58,8 +70,11 @@ type CommunicatorServer interface {
 type UnimplementedCommunicatorServer struct {
 }
 
-func (UnimplementedCommunicatorServer) BatchPull(context.Context, *BatchPullRequest) (*BatchPullResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method BatchPull not implemented")
+func (UnimplementedCommunicatorServer) FillBatch(context.Context, *FillBatchRequest) (*FillBatchResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method FillBatch not implemented")
+}
+func (UnimplementedCommunicatorServer) GetBatch(context.Context, *GetBatchRequest) (*GetBatchResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetBatch not implemented")
 }
 func (UnimplementedCommunicatorServer) mustEmbedUnimplementedCommunicatorServer() {}
 
@@ -74,20 +89,38 @@ func RegisterCommunicatorServer(s grpc.ServiceRegistrar, srv CommunicatorServer)
 	s.RegisterService(&Communicator_ServiceDesc, srv)
 }
 
-func _Communicator_BatchPull_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(BatchPullRequest)
+func _Communicator_FillBatch_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FillBatchRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(CommunicatorServer).BatchPull(ctx, in)
+		return srv.(CommunicatorServer).FillBatch(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Communicator_BatchPull_FullMethodName,
+		FullMethod: Communicator_FillBatch_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CommunicatorServer).BatchPull(ctx, req.(*BatchPullRequest))
+		return srv.(CommunicatorServer).FillBatch(ctx, req.(*FillBatchRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Communicator_GetBatch_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetBatchRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CommunicatorServer).GetBatch(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Communicator_GetBatch_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CommunicatorServer).GetBatch(ctx, req.(*GetBatchRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -100,8 +133,12 @@ var Communicator_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*CommunicatorServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "BatchPull",
-			Handler:    _Communicator_BatchPull_Handler,
+			MethodName: "FillBatch",
+			Handler:    _Communicator_FillBatch_Handler,
+		},
+		{
+			MethodName: "GetBatch",
+			Handler:    _Communicator_GetBatch_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

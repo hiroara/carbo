@@ -1,20 +1,26 @@
 syntax = "proto3";
 
+import "message.proto";
+
 option go_package = "github.com/hiroara/carbo/pb";
 
 service Communicator {
-  rpc BatchPull(BatchPullRequest) returns (BatchPullResponse) {}
+  rpc FillBatch(FillBatchRequest) returns (FillBatchResponse) {}
+  rpc GetBatch(GetBatchRequest) returns (GetBatchResponse) {}
 }
 
-message BatchPullRequest {
-  int32 limit = 1;
+message FillBatchRequest {
+  string token = 1;
+  int32 limit = 2;
 }
 
-message BatchPullResponse {
-  repeated Message messages  = 1;
-  bool closed = 2;
+message FillBatchResponse {
+  bool end = 1;
 }
 
-message Message {
-  bytes value = 1;
+message GetBatchRequest {}
+
+message GetBatchResponse {
+  string token = 1;
+  repeated Message messages = 2;
 }
