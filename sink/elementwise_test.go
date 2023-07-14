@@ -2,6 +2,7 @@ package sink_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/hiroara/carbo/flow"
@@ -15,17 +16,51 @@ import (
 func TestElementWise(t *testing.T) {
 	t.Parallel()
 
-	src := source.FromSlice([]string{"item1", "item2"})
+	createAppendOp := func(sl *[]string) *sink.ElementWiseOp[string] {
+		return sink.ElementWise(func(s string) error {
+			*sl = append(*sl, s)
+			return nil
+		})
+	}
 
-	items := make([]string, 0)
-	sink := sink.ElementWise(func(s string) error {
-		items = append(items, s)
-		return nil
+	runFlowWithSink := func(sinkTask task.Task[string, struct{}]) error {
+		src := source.FromSlice([]string{"item1", "item2"})
+
+		conn := task.Connect(src.AsTask(), sinkTask, 2)
+		err := flow.FromTask(conn).Run(context.Background())
+		return err
+	}
+
+	t.Run("ErrorCase", func(t *testing.T) {
+		t.Parallel()
+
+		op := sink.ElementWise(func(s string) error {
+			return errors.New("test error")
+		})
+
+		err := runFlowWithSink(op.AsTask())
+		require.Error(t, err)
 	})
 
-	conn := task.Connect(src.AsTask(), sink.AsTask(), 2)
-	err := flow.FromTask(conn).Run(context.Background())
-	require.NoError(t, err)
+	t.Run("NoConcurrency", func(t *testing.T) {
+		t.Parallel()
 
-	assert.Equal(t, []string{"item1", "item2"}, items)
+		out := make([]string, 0)
+		op := createAppendOp(&out)
+
+		err := runFlowWithSink(op.AsTask())
+		require.NoError(t, err)
+
+		assert.Equal(t, []string{"item1", "item2"}, out)
+	})
+
+	t.Run("Concurrent", func(t *testing.T) {
+		out := make([]string, 0)
+		op := createAppendOp(&out)
+
+		err := runFlowWithSink(op.Concurrent(2).AsTask())
+		require.NoError(t, err)
+
+		assert.Equal(t, []string{"item1", "item2"}, out)
+	})
 }

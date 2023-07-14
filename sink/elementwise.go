@@ -29,6 +29,6 @@ func (op *ElementWiseOp[S]) AsTask() task.Task[S, struct{}] {
 	return FromFn(op.run)
 }
 
-func (op *ElementWiseOp[S]) Concurrent() task.Task[S, struct{}] {
-	return FromFn(op.run)
+func (op *ElementWiseOp[S]) Concurrent(concurrency int) *Sink[S] {
+	return ConcurrentFromFn(op.run, concurrency)
 }
