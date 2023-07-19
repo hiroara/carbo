@@ -19,7 +19,7 @@ func TestFlowRun(t *testing.T) {
 	src := source.FromSlice([]string{"item1", "item2"})
 
 	items := make([]string, 0)
-	sink := sink.ElementWise(func(str string) error {
+	sink := sink.ElementWise(func(ctx context.Context, str string) error {
 		items = append(items, str)
 		return nil
 	})

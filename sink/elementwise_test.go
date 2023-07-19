@@ -17,7 +17,7 @@ func TestElementWise(t *testing.T) {
 	t.Parallel()
 
 	createAppendOp := func(sl *[]string) *sink.ElementWiseOp[string] {
-		return sink.ElementWise(func(s string) error {
+		return sink.ElementWise(func(ctx context.Context, s string) error {
 			*sl = append(*sl, s)
 			return nil
 		})
@@ -34,7 +34,7 @@ func TestElementWise(t *testing.T) {
 	t.Run("ErrorCase", func(t *testing.T) {
 		t.Parallel()
 
-		op := sink.ElementWise(func(s string) error {
+		op := sink.ElementWise(func(ctx context.Context, s string) error {
 			return errors.New("test error")
 		})
 

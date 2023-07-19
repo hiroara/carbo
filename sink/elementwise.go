@@ -10,13 +10,13 @@ type ElementWiseOp[S any] struct {
 	run SinkFn[S]
 }
 
-type ElementWiseFn[S any] func(s S) error
+type ElementWiseFn[S any] func(context.Context, S) error
 
 func ElementWise[S any](fn ElementWiseFn[S]) *ElementWiseOp[S] {
 	return &ElementWiseOp[S]{
 		run: func(ctx context.Context, in <-chan S) error {
 			for el := range in {
-				if err := fn(el); err != nil {
+				if err := fn(ctx, el); err != nil {
 					return err
 				}
 			}

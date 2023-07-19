@@ -5,13 +5,14 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/hiroara/carbo/flow"
 	"github.com/hiroara/carbo/pipe"
 	"github.com/hiroara/carbo/sink"
 	"github.com/hiroara/carbo/source"
 	"github.com/hiroara/carbo/task"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestMap(t *testing.T) {
@@ -19,7 +20,7 @@ func TestMap(t *testing.T) {
 
 	src := source.FromSlice([]string{"item1", "item2"})
 
-	m := pipe.Map(func(s string) (string, error) {
+	m := pipe.Map(func(ctx context.Context, s string) (string, error) {
 		return s + s, nil
 	})
 
@@ -41,7 +42,7 @@ func TestMap(t *testing.T) {
 	t.Run("ErrorCase", func(t *testing.T) {
 		t.Parallel()
 
-		m := pipe.Map(func(s string) (string, error) {
+		m := pipe.Map(func(ctx context.Context, s string) (string, error) {
 			return "", errors.New("error case")
 		})
 		_, err := runFlowWithMap(m.AsTask())

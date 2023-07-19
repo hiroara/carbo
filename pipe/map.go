@@ -10,13 +10,13 @@ type MapOp[S, T any] struct {
 	run PipeFn[S, T]
 }
 
-type MapFn[S, T any] func(S) (T, error)
+type MapFn[S, T any] func(context.Context, S) (T, error)
 
 func Map[S, T any](fn MapFn[S, T]) *MapOp[S, T] {
 	return &MapOp[S, T]{
 		run: func(ctx context.Context, in <-chan S, out chan<- T) error {
 			for i := range in {
-				mapped, err := fn(i)
+				mapped, err := fn(ctx, i)
 				if err != nil {
 					return err
 				}
