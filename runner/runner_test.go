@@ -16,6 +16,8 @@ import (
 )
 
 func TestRunnerRun(t *testing.T) {
+	t.Parallel()
+
 	r := runner.New[testutils.Config]()
 
 	src := source.FromSlice([]string{"item1", "item2"})
@@ -26,9 +28,9 @@ func TestRunnerRun(t *testing.T) {
 
 	var flowCfg *testutils.Config
 
-	r.Define("flow1", func(cfg *testutils.Config) *flow.Flow {
+	r.Define("flow1", func(cfg *testutils.Config) (*flow.Flow, error) {
 		flowCfg = cfg
-		return flow.FromTask(conn)
+		return flow.FromTask(conn), nil
 	})
 
 	assert.Nil(t, flowCfg)

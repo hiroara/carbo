@@ -6,7 +6,7 @@ import (
 	"github.com/hiroara/carbo/config"
 )
 
-type FactoryFn[C any] func(cfg *C) *Flow
+type FactoryFn[C any] func(cfg *C) (*Flow, error)
 
 type Factory[C any] struct {
 	build FactoryFn[C]
@@ -23,7 +23,12 @@ func (f *Factory[C]) Start(ctx context.Context, cfgPath string) error {
 		return err
 	}
 
-	return f.build(&cfg).Run(ctx)
+	fl, err := f.build(&cfg)
+	if err != nil {
+		return err
+	}
+
+	return fl.Run(ctx)
 }
 
 func Run[C any](ctx context.Context, fn FactoryFn[C], configPath string) error {

@@ -2,6 +2,7 @@ package flow_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/hiroara/carbo/flow"
@@ -20,13 +21,13 @@ type Config struct {
 func createFactoryFn() (flow.FactoryFn[testutils.Config], *testutils.Config) {
 	var flowCfg testutils.Config
 
-	fn := func(cfg *testutils.Config) *flow.Flow {
+	fn := func(cfg *testutils.Config) (*flow.Flow, error) {
 		flowCfg = *cfg
 		src := source.FromSlice([]string{"item1", "item2"})
 
 		items := make([]string, 0)
 		sink := sink.ToSlice(&items)
-		return flow.FromTask(task.Connect(src.AsTask(), sink.AsTask(), 1))
+		return flow.FromTask(task.Connect(src.AsTask(), sink.AsTask(), 1)), nil
 	}
 
 	return fn, &flowCfg
@@ -35,15 +36,32 @@ func createFactoryFn() (flow.FactoryFn[testutils.Config], *testutils.Config) {
 func TestFactoryStart(t *testing.T) {
 	t.Parallel()
 
-	fn, cfg := createFactoryFn()
-	fac := flow.NewFactory(fn)
+	t.Run("NormalCase", func(t *testing.T) {
+		t.Parallel()
 
-	assert.Zero(t, *cfg)
+		fn, cfg := createFactoryFn()
+		fac := flow.NewFactory(fn)
 
-	err := fac.Start(context.Background(), "../testdata/config.yaml")
-	require.NoError(t, err)
+		assert.Zero(t, *cfg)
 
-	assert.Equal(t, "thisisstring", cfg.StringField) // Decoded config is passed to the factory function
+		err := fac.Start(context.Background(), "../testdata/config.yaml")
+		require.NoError(t, err)
+
+		assert.Equal(t, "thisisstring", cfg.StringField) // Decoded config is passed to the factory function
+	})
+
+	t.Run("ErrorCase", func(t *testing.T) {
+		t.Parallel()
+
+		factoryErr := errors.New("test error")
+
+		fac := flow.NewFactory(func(cfg *struct{}) (*flow.Flow, error) {
+			return nil, factoryErr
+		})
+
+		err := fac.Start(context.Background(), "../testdata/config.yaml")
+		require.ErrorIs(t, err, factoryErr)
+	})
 }
 
 func TestRun(t *testing.T) {
