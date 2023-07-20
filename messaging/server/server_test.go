@@ -40,7 +40,7 @@ func TestServer(t *testing.T) {
 	}
 
 	t.Run("Normal", func(t *testing.T) {
-		// t.Parallel()
+		t.Parallel()
 
 		srv := buildServer()
 
@@ -115,7 +115,7 @@ func TestServer(t *testing.T) {
 	})
 
 	t.Run("TokenUnmatch", func(t *testing.T) {
-		// t.Parallel()
+		t.Parallel()
 
 		srv := buildServer()
 
@@ -150,7 +150,7 @@ func TestServer(t *testing.T) {
 	})
 
 	t.Run("RepeatingGet", func(t *testing.T) {
-		// t.Parallel()
+		t.Parallel()
 
 		srv := buildServer()
 

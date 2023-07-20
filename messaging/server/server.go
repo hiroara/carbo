@@ -4,6 +4,7 @@ import (
 	"context"
 	"net"
 	"strconv"
+	"sync"
 	"time"
 
 	"google.golang.org/grpc"
@@ -20,11 +21,12 @@ type Server struct {
 	token     string
 	batch     []*pb.Message
 	completed chan struct{}
+	lock      *sync.Mutex
 }
 
 func New(lis net.Listener, buffer int) *Server {
 	buf := make(chan []byte, buffer)
-	return &Server{listener: lis, buffer: buf, completed: make(chan struct{})}
+	return &Server{listener: lis, buffer: buf, completed: make(chan struct{}), lock: &sync.Mutex{}}
 }
 
 func (s *Server) FillBatch(ctx context.Context, req *pb.FillBatchRequest) (*pb.FillBatchResponse, error) {
@@ -34,38 +36,48 @@ func (s *Server) FillBatch(ctx context.Context, req *pb.FillBatchRequest) (*pb.F
 
 	limit := sanitizeLimit(req.Limit)
 
-	msgs := make([]*pb.Message, 0, limit)
+	ok := s.fillBatch(ctx, limit)
+
+	return &pb.FillBatchResponse{End: !ok}, nil
+}
+
+func (s *Server) fillBatch(ctx context.Context, limit int) bool {
+	s.lock.Lock() // Lock the server until its batch is fulfilled
 
 	bs, ok := <-s.buffer
 	if !ok {
-		s.token = ""
-		s.batch = msgs
-
+		defer s.lock.Unlock()
 		// Buffer has already been closed.
 		// No need to read the batch anymore.
-		s.completed <- struct{}{}
-
-		return &pb.FillBatchResponse{End: true}, nil
+		s.shutdown()
+		return false
 	}
 
-	for {
-		msgs = append(msgs, &pb.Message{Value: bs})
-		if len(msgs) == limit {
-			break
+	go func() {
+		defer s.lock.Unlock()
+
+		msgs := make([]*pb.Message, 0, limit)
+		for {
+			msgs = append(msgs, &pb.Message{Value: bs})
+			if len(msgs) == limit {
+				break
+			}
+
+			if bs, ok = <-s.buffer; !ok {
+				break
+			}
 		}
 
-		if bs, ok = <-s.buffer; !ok {
-			break
-		}
-	}
+		s.token = strconv.FormatInt(time.Now().UnixNano(), 10)
+		s.batch = msgs
+	}()
 
-	s.token = strconv.FormatInt(time.Now().UnixNano(), 10)
-	s.batch = msgs
-
-	return &pb.FillBatchResponse{End: false}, nil
+	return true
 }
 
 func (s *Server) GetBatch(ctx context.Context, req *pb.GetBatchRequest) (*pb.GetBatchResponse, error) {
+	s.lock.Lock() // Wait until filling batch is completed
+	defer s.lock.Unlock()
 	return &pb.GetBatchResponse{Token: s.token, Messages: s.batch}, nil
 }
 
@@ -79,6 +91,12 @@ func (s *Server) Feed(ctx context.Context, bs []byte) {
 func (s *Server) Close() error {
 	close(s.buffer)
 	return nil
+}
+
+func (s *Server) shutdown() {
+	s.token = ""
+	s.batch = make([]*pb.Message, 0)
+	s.completed <- struct{}{}
 }
 
 func (s *Server) Run(ctx context.Context) error {
