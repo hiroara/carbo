@@ -3,6 +3,8 @@ services:
     build:
       context: .
       target: protoc
+    profiles:
+      - tool
     volumes:
       - type: bind
         source: .
@@ -16,3 +18,13 @@ services:
       - --proto_path=./proto
       - communicator.proto
       - message.proto
+  godoc:
+    build:
+      context: .
+      target: godoc
+    ports:
+      - 6060
+    volumes:
+      - type: bind
+        source: .
+        target: /usr/local/go/src/github.com/hiroara/carbo
