@@ -10,10 +10,7 @@ type sink[S any] struct {
 	run SinkFn[S]
 }
 
-type Sink[S any] interface {
-	task.Task[S, struct{}]
-	AsTask() task.Task[S, struct{}]
-}
+type Sink[S any] task.Task[S, struct{}]
 
 type SinkFn[S any] func(ctx context.Context, in <-chan S) error
 

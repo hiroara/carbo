@@ -10,10 +10,7 @@ type source[T any] struct {
 	run SourceFn[T]
 }
 
-type Source[T any] interface {
-	task.Task[struct{}, T]
-	AsTask() task.Task[struct{}, T]
-}
+type Source[T any] task.Task[struct{}, T]
 
 type SourceFn[T any] func(ctx context.Context, out chan<- T) error
 
