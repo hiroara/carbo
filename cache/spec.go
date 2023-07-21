@@ -6,3 +6,5 @@ type Spec[S, T, K, V any] interface {
 	Encode(T) (V, error)
 	Decode(V) (T, error)
 }
+
+type KeyFn[S, K any] func(S) (K, error)

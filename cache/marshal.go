@@ -8,8 +8,6 @@ type marshalSpec[S, T, K any] struct {
 	valueSpec marshal.Spec[T]
 }
 
-type KeyFn[S, K any] func(S) (K, error)
-
 func NewMarshalSpec[S, T, K any](store Store[K, []byte], keyFn KeyFn[S, K], valueSpec marshal.Spec[T]) Spec[S, T, K, []byte] {
 	return &marshalSpec[S, T, K]{
 		Store:     store,
