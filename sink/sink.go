@@ -3,47 +3,29 @@ package sink
 import (
 	"context"
 
-	"golang.org/x/sync/errgroup"
-
 	"github.com/hiroara/carbo/task"
 )
 
-type Sink[S any] struct {
+type sink[S any] struct {
 	run SinkFn[S]
+}
+
+type Sink[S any] interface {
+	task.Task[S, struct{}]
+	AsTask() task.Task[S, struct{}]
 }
 
 type SinkFn[S any] func(ctx context.Context, in <-chan S) error
 
-func FromFn[S any](fn SinkFn[S]) *Sink[S] {
-	return &Sink[S]{run: fn}
+func FromFn[S any](fn SinkFn[S]) Sink[S] {
+	return &sink[S]{run: fn}
 }
 
-func (s *Sink[S]) AsTask() task.Task[S, struct{}] {
+func (s *sink[S]) AsTask() task.Task[S, struct{}] {
 	return task.Task[S, struct{}](s)
 }
 
-func (s *Sink[S]) Run(ctx context.Context, in <-chan S, out chan<- struct{}) error {
+func (s *sink[S]) Run(ctx context.Context, in <-chan S, out chan<- struct{}) error {
 	defer close(out)
 	return s.run(ctx, in)
-}
-
-func Concurrent[S any](ss []*Sink[S]) *Sink[S] {
-	return FromFn(func(ctx context.Context, in <-chan S) error {
-		grp, ctx := errgroup.WithContext(ctx)
-		for _, s := range ss {
-			src := s
-			grp.Go(func() error {
-				return src.run(ctx, in)
-			})
-		}
-		return grp.Wait()
-	})
-}
-
-func ConcurrentFromFn[S any](fn SinkFn[S], concurrency int) *Sink[S] {
-	ss := make([]*Sink[S], concurrency)
-	for i := range ss {
-		ss[i] = FromFn(fn)
-	}
-	return Concurrent(ss)
 }

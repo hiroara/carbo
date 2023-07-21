@@ -23,7 +23,7 @@ func Expose[S any](lis net.Listener, m marshal.Spec[S], buffer int) *ExposeOp[S]
 	}
 }
 
-func (op *ExposeOp[S]) AsSink() *Sink[S] {
+func (op *ExposeOp[S]) AsSink() Sink[S] {
 	return FromFn(func(ctx context.Context, in <-chan S) error {
 		grp, ctx := errgroup.WithContext(ctx)
 		grp.Go(func() error { return op.server.Run(ctx) })

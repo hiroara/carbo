@@ -14,7 +14,7 @@ func ToSlice[S any](s *[]S) *ToSliceOp[S] {
 	return &ToSliceOp[S]{result: s}
 }
 
-func (op *ToSliceOp[S]) AsSink() *Sink[S] {
+func (op *ToSliceOp[S]) AsSink() Sink[S] {
 	result := *op.result
 	return ElementWise(func(ctx context.Context, s S) error {
 		result = append(result, s)

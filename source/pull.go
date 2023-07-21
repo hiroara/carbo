@@ -20,7 +20,7 @@ func Pull[T any](conn grpc.ClientConnInterface, m marshal.Spec[T], chunkSize int
 	return &PullOp[T]{chunkSize: chunkSize, client: pb.NewCommunicatorClient(conn), marshalSpec: m}
 }
 
-func (op *PullOp[T]) AsSource() *Source[T] {
+func (op *PullOp[T]) AsSource() Source[T] {
 	return FromFn(func(ctx context.Context, out chan<- T) error {
 		lim := int32(op.chunkSize)
 		fbResp, err := op.client.FillBatch(ctx, &pb.FillBatchRequest{Limit: lim})

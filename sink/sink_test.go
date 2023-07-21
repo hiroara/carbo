@@ -4,28 +4,30 @@ import (
 	"context"
 	"testing"
 
-	"github.com/hiroara/carbo/sink"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/hiroara/carbo/internal/testutils"
+	"github.com/hiroara/carbo/sink"
 )
 
-func createArraySink() (sink.SinkFn[string], *[]string, *bool) {
-	items := make([]string, 0)
-	called := false
+func createArraySink() (sink.SinkFn[string], chan string, chan struct{}) {
+	c := make(chan string, 4)
+	called := make(chan struct{}, 2)
 	sinkFn := func(ctx context.Context, in <-chan string) error {
-		called = true
+		called <- struct{}{}
 		for i := range in {
-			items = append(items, i)
+			c <- i
 		}
 		return nil
 	}
-	return sinkFn, &items, &called
+	return sinkFn, c, called
 }
 
 func TestSinkRun(t *testing.T) {
 	t.Parallel()
 
-	sinkFn, items, _ := createArraySink()
+	sinkFn, items, called := createArraySink()
 	sink := sink.FromFn(sinkFn)
 
 	in := make(chan string, 2)
@@ -36,51 +38,9 @@ func TestSinkRun(t *testing.T) {
 
 	err := sink.Run(context.Background(), in, out)
 	require.NoError(t, err)
+	close(items)
+	close(called)
 
-	assert.Equal(t, []string{"item1", "item2"}, *items)
-}
-
-func TestConcurrentSink(t *testing.T) {
-	t.Parallel()
-
-	runSink := func(s *sink.Sink[string]) error {
-		in := make(chan string, 4)
-		out := make(chan struct{})
-		in <- "item1"
-		in <- "item2"
-		in <- "item3"
-		in <- "item4"
-		close(in)
-
-		return s.Run(context.Background(), in, out)
-	}
-
-	t.Run("Concurrent", func(t *testing.T) {
-		sinkFn1, items1, called1 := createArraySink()
-		sinkFn2, items2, called2 := createArraySink()
-
-		s := sink.Concurrent([]*sink.Sink[string]{
-			sink.FromFn(sinkFn1),
-			sink.FromFn(sinkFn2),
-		})
-
-		err := runSink(s)
-		require.NoError(t, err)
-
-		items := append(*items1, *items2...)
-		assert.True(t, *called1)
-		assert.True(t, *called2)
-		assert.ElementsMatch(t, []string{"item1", "item2", "item3", "item4"}, items)
-	})
-
-	t.Run("ConcurrentFromFn", func(t *testing.T) {
-		sinkFn, items, called := createArraySink()
-
-		s := sink.ConcurrentFromFn(sinkFn, 2)
-
-		err := runSink(s)
-		require.NoError(t, err)
-		assert.True(t, *called)
-		assert.ElementsMatch(t, []string{"item1", "item2", "item3", "item4"}, *items)
-	})
+	assert.Equal(t, []string{"item1", "item2"}, testutils.ReadItems(items))
+	assert.Len(t, testutils.ReadItems(called), 1)
 }

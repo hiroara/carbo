@@ -21,7 +21,7 @@ func FromSlice[T any](items []T) *SliceSourceOp[T] {
 	}
 }
 
-func (op *SliceSourceOp[T]) AsSource() *Source[T] {
+func (op *SliceSourceOp[T]) AsSource() Source[T] {
 	return FromFn(op.run)
 }
 
