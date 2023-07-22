@@ -1,6 +1,8 @@
 package cache
 
-import "github.com/hiroara/carbo/messaging/marshal"
+import (
+	"github.com/hiroara/carbo/messaging/marshal"
+)
 
 type marshalSpec[S, T, K any] struct {
 	Store[K, []byte]
@@ -16,7 +18,7 @@ func NewMarshalSpec[S, T, K any](store Store[K, []byte], keyFn KeyFn[S, K], valu
 	}
 }
 
-func (sp *marshalSpec[S, T, K]) Key(el S) (K, error) {
+func (sp *marshalSpec[S, T, K]) Key(el S) (*StoreKey[K], error) {
 	return sp.keyFn(el)
 }
 

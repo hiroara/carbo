@@ -12,7 +12,7 @@ func NewRawSpec[S, T, K any](store Store[K, T], keyFn KeyFn[S, K]) Spec[S, T, K,
 	}
 }
 
-func (sp *rawSpec[S, T, K]) Key(el S) (K, error) {
+func (sp *rawSpec[S, T, K]) Key(el S) (*StoreKey[K], error) {
 	return sp.keyFn(el)
 }
 

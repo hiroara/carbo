@@ -77,8 +77,8 @@ func TestMap(t *testing.T) {
 		cs := cache.NewMemoryStore[[]byte]()
 		sp := cache.NewMarshalSpec[string, string, string](
 			cs,
-			func(el string) (string, error) {
-				return el, nil
+			func(el string) (*cache.StoreKey[string], error) {
+				return cache.Key(el), nil
 			},
 			ms,
 		)

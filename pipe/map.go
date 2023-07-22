@@ -42,13 +42,6 @@ func (op *MapOp[S, T]) pipeFn() PipeFn[S, T] {
 
 func MapWithCache[S, T, K, V any](fn MapFn[S, T], sp cache.Spec[S, T, K, V]) *MapOp[S, T] {
 	return Map(func(ctx context.Context, el S) (T, error) {
-		var zero T
-
-		ent, err := cache.GetEntry(sp, el)
-		if err != nil {
-			return zero, err
-		}
-
-		return ent.Run(ctx, cache.CacheableFn[S, T](fn))
+		return cache.Run(ctx, sp, el, cache.CacheableFn[S, T](fn))
 	})
 }

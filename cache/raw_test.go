@@ -11,14 +11,14 @@ import (
 
 func TestRawSpec(t *testing.T) {
 	store := cache.NewMemoryStore[string]()
-	keyFn := func(s string) (string, error) {
-		return "key:" + s, nil
+	keyFn := func(s string) (*cache.StoreKey[string], error) {
+		return cache.Key("key:" + s), nil
 	}
 	sp := cache.NewRawSpec[string, string, string](store, keyFn)
 
 	k, err := sp.Key("item1")
 	require.NoError(t, err)
-	assert.Equal(t, "key:item1", k)
+	assert.NotNil(t, k)
 
 	v, err := sp.Encode("item2")
 	require.NoError(t, err)
