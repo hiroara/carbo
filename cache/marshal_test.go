@@ -15,7 +15,7 @@ func TestMarshalSpec(t *testing.T) {
 	keyFn := func(s string) (string, error) {
 		return "key:" + s, nil
 	}
-	sp := cache.NewMarshalSpec[string, string, string](store, keyFn, marshal.Raw[string]())
+	sp := cache.NewMarshalSpec[string, string, string](store, keyFn, marshal.Bytes[string]())
 
 	k, err := sp.Key("item1")
 	require.NoError(t, err)

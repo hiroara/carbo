@@ -20,7 +20,7 @@ import (
 )
 
 func TestPull(t *testing.T) {
-	ms := marshal.Raw[string]()
+	ms := marshal.Bytes[string]()
 
 	dir := t.TempDir()
 	sock := filepath.Join(dir, "srv.sock")

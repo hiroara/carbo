@@ -28,7 +28,7 @@ func TestServer(t *testing.T) {
 		return server.New(lis, 2)
 	}
 
-	ms := marshal.Raw[string]()
+	ms := marshal.Bytes[string]()
 
 	feedMessage := func(ctx context.Context, srv *server.Server, msg string) error {
 		bs, err := ms.Marshal(msg)

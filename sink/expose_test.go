@@ -29,7 +29,7 @@ func TestExpose(t *testing.T) {
 	require.NoError(t, err)
 
 	data := []string{"item1", "item2"}
-	ms := marshal.Raw[string]()
+	ms := marshal.Bytes[string]()
 	src := source.FromSlice(data)
 	exp := sink.Expose(lis, ms, 2)
 	conn := task.Connect(src.AsTask(), exp.AsTask(), 2)

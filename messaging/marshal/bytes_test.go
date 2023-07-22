@@ -9,9 +9,9 @@ import (
 	"github.com/hiroara/carbo/messaging/marshal"
 )
 
-func TestRaw(t *testing.T) {
+func TestBytes(t *testing.T) {
 	data := "dummy data"
-	r := marshal.Raw[string]()
+	r := marshal.Bytes[string]()
 	bs, err := r.Marshal(data)
 	require.NoError(t, err)
 	assert.Equal(t, data, string(bs))

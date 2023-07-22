@@ -16,7 +16,7 @@ func TestEntry(t *testing.T) {
 	keyFn := func(s string) (string, error) {
 		return "key:" + s, nil
 	}
-	sp := cache.NewMarshalSpec[string, string, string](store, keyFn, marshal.Raw[string]())
+	sp := cache.NewMarshalSpec[string, string, string](store, keyFn, marshal.Bytes[string]())
 
 	ent, err := cache.GetEntry(sp, "item1")
 	require.NoError(t, err)
