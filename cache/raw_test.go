@@ -9,12 +9,12 @@ import (
 	"github.com/hiroara/carbo/cache"
 )
 
-func TestNopSpec(t *testing.T) {
+func TestRawSpec(t *testing.T) {
 	store := cache.NewMemoryStore[string]()
 	keyFn := func(s string) (string, error) {
 		return "key:" + s, nil
 	}
-	sp := cache.NewNopSpec[string, string, string](store, keyFn)
+	sp := cache.NewRawSpec[string, string, string](store, keyFn)
 
 	k, err := sp.Key("item1")
 	require.NoError(t, err)
