@@ -6,6 +6,10 @@ import (
 
 type KeyFn[S, K any] func(S) (*StoreKey[K], error)
 
+func IdentityKey[S any](el S) (*StoreKey[S], error) {
+	return Key(el), nil
+}
+
 type StoreKey[K any] struct {
 	key      K
 	behavior behavior.BehaviorType
