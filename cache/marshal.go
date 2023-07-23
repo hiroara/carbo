@@ -1,18 +1,19 @@
 package cache
 
 import (
+	"github.com/hiroara/carbo/cache/store"
 	"github.com/hiroara/carbo/messaging/marshal"
 )
 
 type marshalSpec[S, T, K any] struct {
-	Store[K, []byte]
+	store.Store[K, []byte]
 	keyFn     KeyFn[S, K]
 	valueSpec marshal.Spec[T]
 }
 
-func NewMarshalSpec[S, T, K any](store Store[K, []byte], keyFn KeyFn[S, K], valueSpec marshal.Spec[T]) Spec[S, T, K, []byte] {
+func NewMarshalSpec[S, T, K any](cs store.Definition[K, []byte], keyFn KeyFn[S, K], valueSpec marshal.Spec[T]) Spec[S, T, K, []byte] {
 	return &marshalSpec[S, T, K]{
-		Store:     store,
+		Store:     store.Build(cs),
 		keyFn:     keyFn,
 		valueSpec: valueSpec,
 	}

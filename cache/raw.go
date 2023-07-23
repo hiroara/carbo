@@ -1,13 +1,15 @@
 package cache
 
+import "github.com/hiroara/carbo/cache/store"
+
 type rawSpec[S, T, K any] struct {
-	Store[K, T]
+	store.Store[K, T]
 	keyFn KeyFn[S, K]
 }
 
-func NewRawSpec[S, T, K any](store Store[K, T], keyFn KeyFn[S, K]) Spec[S, T, K, T] {
+func NewRawSpec[S, T, K any](cs store.Definition[K, T], keyFn KeyFn[S, K]) Spec[S, T, K, T] {
 	return &rawSpec[S, T, K]{
-		Store: store,
+		Store: store.Build(cs),
 		keyFn: keyFn,
 	}
 }

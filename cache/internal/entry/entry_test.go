@@ -9,15 +9,16 @@ import (
 
 	"github.com/hiroara/carbo/cache"
 	"github.com/hiroara/carbo/cache/internal/entry"
+	"github.com/hiroara/carbo/cache/store"
 )
 
 func buildSpec() entry.Spec[string, string, []byte] {
-	store := cache.NewMemoryStore[[]byte]()
-	return &dummySpec{Store: store}
+	cs := cache.NewMemoryStore[[]byte]()
+	return &dummySpec{Store: store.Build[string, []byte](cs)}
 }
 
 type dummySpec struct {
-	cache.Store[string, []byte]
+	store.Store[string, []byte]
 }
 
 func (sp *dummySpec) Decode(value []byte) (string, error) {
