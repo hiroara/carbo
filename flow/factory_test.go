@@ -18,7 +18,20 @@ type Config struct {
 	Value string `yaml:"value"`
 }
 
-func createFactoryFn() (flow.FactoryFn[testutils.Config], *testutils.Config) {
+func createFactoryFn() (flow.FactoryFn, *bool) {
+	called := false
+	fn := func() (*flow.Flow, error) {
+		called = true
+		src := source.FromSlice([]string{"item1", "item2"})
+
+		items := make([]string, 0)
+		sink := sink.ToSlice(&items)
+		return flow.FromTask(task.Connect(src.AsTask(), sink.AsTask(), 1)), nil
+	}
+	return fn, &called
+}
+
+func createFactoryFnWithConfig() (flow.FactoryFnWithConfig[testutils.Config], *testutils.Config) {
 	var flowCfg testutils.Config
 
 	fn := func(cfg *testutils.Config) (*flow.Flow, error) {
@@ -39,12 +52,23 @@ func TestFactoryStart(t *testing.T) {
 	t.Run("NormalCase", func(t *testing.T) {
 		t.Parallel()
 
-		fn, cfg := createFactoryFn()
+		fn, called := createFactoryFn()
 		fac := flow.NewFactory(fn)
+
+		err := fac.Start(context.Background())
+		require.NoError(t, err)
+		assert.True(t, *called)
+	})
+
+	t.Run("WithConfig", func(t *testing.T) {
+		t.Parallel()
+
+		fn, cfg := createFactoryFnWithConfig()
+		fac := flow.NewFactoryWithConfig(fn, "../testdata/config.yaml")
 
 		assert.Zero(t, *cfg)
 
-		err := fac.Start(context.Background(), "../testdata/config.yaml")
+		err := fac.Start(context.Background())
 		require.NoError(t, err)
 
 		assert.Equal(t, "thisisstring", cfg.StringField) // Decoded config is passed to the factory function
@@ -55,11 +79,11 @@ func TestFactoryStart(t *testing.T) {
 
 		factoryErr := errors.New("test error")
 
-		fac := flow.NewFactory(func(cfg *struct{}) (*flow.Flow, error) {
+		fac := flow.NewFactory(func() (*flow.Flow, error) {
 			return nil, factoryErr
 		})
 
-		err := fac.Start(context.Background(), "../testdata/config.yaml")
+		err := fac.Start(context.Background())
 		require.ErrorIs(t, err, factoryErr)
 	})
 }
@@ -67,11 +91,20 @@ func TestFactoryStart(t *testing.T) {
 func TestRun(t *testing.T) {
 	t.Parallel()
 
-	fn, cfg := createFactoryFn()
+	fn, called := createFactoryFn()
 
-	assert.Zero(t, *cfg)
+	err := flow.Run(context.Background(), fn)
+	require.NoError(t, err)
 
-	err := flow.Run(context.Background(), fn, "../testdata/config.yaml")
+	assert.True(t, *called) // Decoded config is passed to the factory function
+}
+
+func TestRunWithConfig(t *testing.T) {
+	t.Parallel()
+
+	fn, cfg := createFactoryFnWithConfig()
+
+	err := flow.RunWithConfig(context.Background(), fn, "../testdata/config.yaml")
 	require.NoError(t, err)
 
 	assert.Equal(t, "thisisstring", cfg.StringField) // Decoded config is passed to the factory function

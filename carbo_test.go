@@ -62,7 +62,7 @@ func Example_flowFactory() {
 		return flow.FromTask(pr), nil
 	}
 
-	flow.Run(context.Background(), fac, "testdata/config.yaml")
+	flow.RunWithConfig(context.Background(), fac, "testdata/config.yaml")
 	// Output:
 	// thisisstring
 }
@@ -70,8 +70,8 @@ func Example_flowFactory() {
 // Define multiple flow factories, register them to a runner, and run a flow.
 // This is useful to make an executable that takes a subcommand.
 func Example_runner() {
-	fac1 := func(cfg *MyConfig) (*flow.Flow, error) {
-		ss := source.FromSlice([]string{cfg.StringField})
+	fac1 := func() (*flow.Flow, error) {
+		ss := source.FromSlice([]string{"item1"})
 		pr := task.Connect(
 			ss.AsTask(),
 			sink.ElementWise(func(ctx context.Context, s string) error {
@@ -95,10 +95,10 @@ func Example_runner() {
 		return flow.FromTask(pr), nil
 	}
 
-	r := runner.New[MyConfig]()
-	r.Define("flow1", fac1)
-	r.Define("flow2", fac2)
-	r.Run(context.Background(), "flow2", "testdata/config.yaml")
+	r := runner.New()
+	r.Define("flow1", flow.NewFactory(fac1))
+	r.Define("flow2", flow.NewFactoryWithConfig(fac2, "testdata/config.yaml"))
+	r.Run(context.Background(), "flow2")
 	// Output:
 	// 100
 }

@@ -8,7 +8,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/hiroara/carbo/flow"
-	"github.com/hiroara/carbo/internal/testutils"
 	"github.com/hiroara/carbo/runner"
 	"github.com/hiroara/carbo/sink"
 	"github.com/hiroara/carbo/source"
@@ -18,29 +17,24 @@ import (
 func TestRunnerRun(t *testing.T) {
 	t.Parallel()
 
-	r := runner.New[testutils.Config]()
+	r := runner.New()
 
 	src := source.FromSlice([]string{"item1", "item2"})
 
 	out := make([]string, 0)
 	sink := sink.ToSlice(&out)
 	conn := task.Connect(src.AsTask(), sink.AsTask(), 2)
+	called := false
 
-	var flowCfg *testutils.Config
-
-	r.Define("flow1", func(cfg *testutils.Config) (*flow.Flow, error) {
-		flowCfg = cfg
+	r.Define("flow1", flow.NewFactory(func() (*flow.Flow, error) {
+		called = true
 		return flow.FromTask(conn), nil
-	})
+	}))
 
-	assert.Nil(t, flowCfg)
-
-	err := r.Run(context.Background(), "flow1", "../testdata/config.yaml")
+	err := r.Run(context.Background(), "flow1")
 	require.NoError(t, err)
 
-	if assert.NotNil(t, flowCfg) {
-		assert.Equal(t, "thisisstring", flowCfg.StringField)
+	if assert.True(t, called) {
+		assert.Equal(t, []string{"item1", "item2"}, out)
 	}
-
-	assert.Equal(t, []string{"item1", "item2"}, out)
 }
