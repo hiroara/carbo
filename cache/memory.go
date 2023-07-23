@@ -13,13 +13,13 @@ func NewMemoryStore[V any]() *MemoryStore[V] {
 	return &MemoryStore[V]{cache: sync.Map{}}
 }
 
-func (cs *MemoryStore[V]) Get(ctx context.Context, key string) (V, bool, error) {
-	var zero V
+func (cs *MemoryStore[V]) Get(ctx context.Context, key string) (*V, error) {
 	v, ok := cs.cache.Load(key)
 	if !ok {
-		return zero, false, nil
+		return nil, nil
 	}
-	return v.(V), true, nil
+	val := v.(V)
+	return &val, nil
 }
 
 func (cs *MemoryStore[V]) Set(ctx context.Context, key string, value V) error {

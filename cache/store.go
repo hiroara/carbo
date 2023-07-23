@@ -5,6 +5,6 @@ import (
 )
 
 type Store[K, V any] interface {
-	Get(ctx context.Context, key K) (value V, ok bool, err error)
+	Get(ctx context.Context, key K) (value *V, err error)
 	Set(ctx context.Context, key K, value V) (err error)
 }

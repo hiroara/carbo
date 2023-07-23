@@ -32,10 +32,9 @@ func TestBypassBehavior(t *testing.T) {
 		assert.Equal(t, "item1item1", v)
 		assert.Equal(t, 1, called)
 
-		v, ok, err := ent.Get(ctx)
+		vp, err := ent.Get(ctx)
 		require.NoError(t, err)
-		assert.False(t, ok)
-		assert.Zero(t, v)
+		assert.Nil(t, vp)
 
 		v, err = b.Run(ctx, "item1", fn)
 		require.NoError(t, err)

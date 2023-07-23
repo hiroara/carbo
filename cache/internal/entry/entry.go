@@ -3,7 +3,7 @@ package entry
 import "context"
 
 type Spec[T, K, V any] interface {
-	Get(context.Context, K) (V, bool, error)
+	Get(context.Context, K) (*V, error)
 	Set(context.Context, K, V) error
 	Decode(V) (T, error)
 	Encode(T) (V, error)
@@ -18,24 +18,22 @@ func New[T, K, V any](sp Spec[T, K, V], key K) *Entry[T, K, V] {
 	return &Entry[T, K, V]{spec: sp, key: key}
 }
 
-func (ent *Entry[T, K, V]) Get(ctx context.Context) (T, bool, error) {
-	var zero T
-
-	e, ok, err := ent.spec.Get(ctx, ent.key)
+func (ent *Entry[T, K, V]) Get(ctx context.Context) (*T, error) {
+	v, err := ent.spec.Get(ctx, ent.key)
 	if err != nil {
-		return zero, false, err
+		return nil, err
 	}
 
-	if !ok {
-		return zero, false, nil
+	if v == nil {
+		return nil, nil
 	}
 
-	v, err := ent.spec.Decode(e)
+	el, err := ent.spec.Decode(*v)
 	if err != nil {
-		return zero, false, err
+		return nil, err
 	}
 
-	return v, true, nil
+	return &el, nil
 }
 
 func (ent *Entry[T, K, V]) Set(ctx context.Context, v T) error {

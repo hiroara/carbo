@@ -32,10 +32,11 @@ func TestWriteOnlyBehavior(t *testing.T) {
 		assert.Equal(t, "item1item1", v)
 		assert.Equal(t, 1, called)
 
-		v, ok, err := ent.Get(ctx)
+		vp, err := ent.Get(ctx)
 		require.NoError(t, err)
-		assert.True(t, ok)
-		assert.Equal(t, "item1item1", v)
+		if assert.NotNil(t, vp) {
+			assert.Equal(t, "item1item1", *vp)
+		}
 
 		v, err = b.Run(ctx, "item1", fn)
 		require.NoError(t, err)

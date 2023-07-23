@@ -10,11 +10,11 @@ type dummyEntry struct {
 	value string
 }
 
-func (e *dummyEntry) Get(ctx context.Context) (string, bool, error) {
+func (e *dummyEntry) Get(ctx context.Context) (*string, error) {
 	if e.value == "" {
-		return "", false, nil
+		return nil, nil
 	}
-	return e.value, true, nil
+	return &e.value, nil
 }
 
 func (e *dummyEntry) Set(ctx context.Context, v string) error {

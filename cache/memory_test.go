@@ -16,16 +16,16 @@ func TestMemoryStore(t *testing.T) {
 	key1 := "key-1"
 	value1 := "value-1"
 
-	_, ok, err := store.Get(ctx, key1)
+	vp, err := store.Get(ctx, key1)
 	require.NoError(t, err)
-	assert.False(t, ok)
+	assert.Nil(t, vp)
 
 	err = store.Set(ctx, key1, value1)
 	require.NoError(t, err)
 
-	v, ok, err := store.Get(ctx, key1)
+	vp, err = store.Get(ctx, key1)
 	require.NoError(t, err)
-	if assert.True(t, ok) {
-		assert.Equal(t, value1, v)
+	if assert.NotNil(t, vp) {
+		assert.Equal(t, value1, *vp)
 	}
 }

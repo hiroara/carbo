@@ -36,16 +36,16 @@ func TestEntry(t *testing.T) {
 
 	ctx := context.Background()
 
-	v, ok, err := ent.Get(ctx)
+	v, err := ent.Get(ctx)
 	require.NoError(t, err)
-	assert.False(t, ok)
-	assert.Zero(t, v)
+	assert.Nil(t, v)
 
 	err = ent.Set(ctx, "value1")
 	require.NoError(t, err)
 
-	v, ok, err = ent.Get(ctx)
+	v, err = ent.Get(ctx)
 	require.NoError(t, err)
-	assert.True(t, ok)
-	assert.Equal(t, "value1", v)
+	if assert.NotNil(t, v) {
+		assert.Equal(t, "value1", *v)
+	}
 }

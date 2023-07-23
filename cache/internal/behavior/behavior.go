@@ -7,7 +7,7 @@ type Behavior[S, T any] interface {
 }
 
 type Entry[T any] interface {
-	Get(context.Context) (T, bool, error)
+	Get(context.Context) (*T, error)
 	Set(context.Context, T) error
 }
 

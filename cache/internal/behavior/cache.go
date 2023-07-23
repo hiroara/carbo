@@ -9,23 +9,23 @@ type cacheBehavior[S, T any] struct {
 func (b *cacheBehavior[S, T]) Run(ctx context.Context, el S, fn CacheableFn[S, T]) (T, error) {
 	var zero T
 
-	v, ok, err := b.entry.Get(ctx)
+	v, err := b.entry.Get(ctx)
 	if err != nil {
 		return zero, err
 	}
 
-	if ok {
-		return v, nil
+	if v != nil {
+		return *v, nil
 	}
 
-	v, err = fn(ctx, el)
+	t, err := fn(ctx, el)
 	if err != nil {
 		return zero, err
 	}
 
-	if err := b.entry.Set(ctx, v); err != nil {
+	if err := b.entry.Set(ctx, t); err != nil {
 		return zero, err
 	}
 
-	return v, nil
+	return t, nil
 }
