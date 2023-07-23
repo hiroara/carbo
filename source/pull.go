@@ -10,19 +10,32 @@ import (
 	"github.com/hiroara/carbo/task"
 )
 
+// A Source task that reads elements from a gRPC Communicator service and emits them.
+//
+// This Source task can be used to pull data from another process that exposes data via a Communicator service.
 type PullOp[T any] struct {
-	chunkSize   int
+	batchSize   int
 	client      pb.CommunicatorClient
 	marshalSpec marshal.Spec[T]
 }
 
-func Pull[T any](conn grpc.ClientConnInterface, m marshal.Spec[T], chunkSize int) *PullOp[T] {
-	return &PullOp[T]{chunkSize: chunkSize, client: pb.NewCommunicatorClient(conn), marshalSpec: m}
+// Create a PullOp with a gRPC connection and a marshal spec.
+//
+// The gRPC connection needs to be a connection with a Communicator service.
+// And, the marshal spec defines how elements exposed via the Communicator service should be decoded.
+// To successfully decode elements pulled from the Communicator service, the marshal spec needs to be the same one used to expose the data.
+//
+// The batchSize argument defines the size of batches when pulling data from a Communicator service.
+// The larger batch size reduces the number of communication over a network, but also,
+// it let the process to wait for a large batch is fulfilled.
+func Pull[T any](conn grpc.ClientConnInterface, m marshal.Spec[T], batchSize int) *PullOp[T] {
+	return &PullOp[T]{batchSize: batchSize, client: pb.NewCommunicatorClient(conn), marshalSpec: m}
 }
 
+// Convert this operation as a Source.
 func (op *PullOp[T]) AsSource() Source[T] {
 	return FromFn(func(ctx context.Context, out chan<- T) error {
-		lim := int32(op.chunkSize)
+		lim := int32(op.batchSize)
 		fbResp, err := op.client.FillBatch(ctx, &pb.FillBatchRequest{Limit: lim})
 		if err != nil {
 			return err
@@ -34,23 +47,24 @@ func (op *PullOp[T]) AsSource() Source[T] {
 				return err
 			}
 
-			for _, msg := range resp.Messages {
-				bs, err := op.marshalSpec.Unmarshal(msg.Value)
-				if err != nil {
-					return nil
-				}
-				out <- bs
-			}
-
 			fbResp, err = op.client.FillBatch(ctx, &pb.FillBatchRequest{Token: resp.Token, Limit: lim})
 			if err != nil {
 				return err
+			}
+
+			for _, msg := range resp.Messages {
+				el, err := op.marshalSpec.Unmarshal(msg.Value)
+				if err != nil {
+					return nil
+				}
+				out <- el
 			}
 		}
 		return nil
 	})
 }
 
+// Convert this operation as a Task.
 func (op *PullOp[T]) AsTask() task.Task[struct{}, T] {
 	return op.AsSource()
 }

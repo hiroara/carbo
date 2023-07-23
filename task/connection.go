@@ -16,8 +16,8 @@ import (
 //   T: Type of elements that are passed to a downstream task
 type Connection[S, M, T any] struct {
 	deferrer.Deferrer
-	Src  Task[S, M] // The first task that is contained in this connection.
-	Dest Task[M, T] // The second task that is contained in this connection.
+	Src  Task[S, M] // The first task that is contained in this Connection.
+	Dest Task[M, T] // The second task that is contained in this Connection.
 	c    chan M
 }
 
@@ -26,7 +26,7 @@ func Connect[S, M, T any](src Task[S, M], dest Task[M, T], buf int) Task[S, T] {
 	return &Connection[S, M, T]{Src: src, Dest: dest, c: make(chan M, buf)}
 }
 
-// Cast the connection as a task.
+// Convert the Connection as a task.
 func (c *Connection[S, M, T]) AsTask() Task[S, T] {
 	return Task[S, T](c)
 }
