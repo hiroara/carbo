@@ -64,7 +64,7 @@ func Example_flowFactory() {
 
 	flow.RunWithConfig(context.Background(), fac, "testdata/config.yaml")
 	// Output:
-	// thisisstring
+	// value-from-string-field
 }
 
 // Define multiple flow factories, register them to a runner, and run a flow.

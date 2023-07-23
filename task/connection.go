@@ -8,22 +8,31 @@ import (
 	"github.com/hiroara/carbo/deferrer"
 )
 
-type Connection[T1, T2, T3 any] struct {
+// Connection is a task that represents connected two tasks.
+//
+// Type parameters:
+//   S: Type of elements fed by an upstream task
+//   M: Type of elements that are sent from Src to Dest
+//   T: Type of elements that are passed to a downstream task
+type Connection[S, M, T any] struct {
 	deferrer.Deferrer
-	Src  Task[T1, T2]
-	Dest Task[T2, T3]
-	c    chan T2
+	Src  Task[S, M] // The first task that is contained in this connection.
+	Dest Task[M, T] // The second task that is contained in this connection.
+	c    chan M
 }
 
-func Connect[T1, T2, T3 any](src Task[T1, T2], dest Task[T2, T3], buf int) Task[T1, T3] {
-	return &Connection[T1, T2, T3]{Src: src, Dest: dest, c: make(chan T2, buf)}
+// Connect two tasks as a Connection.
+func Connect[S, M, T any](src Task[S, M], dest Task[M, T], buf int) Task[S, T] {
+	return &Connection[S, M, T]{Src: src, Dest: dest, c: make(chan M, buf)}
 }
 
-func (c *Connection[T1, T2, T3]) AsTask() Task[T1, T3] {
-	return Task[T1, T3](c)
+// Cast the connection as a task.
+func (c *Connection[S, M, T]) AsTask() Task[S, T] {
+	return Task[S, T](c)
 }
 
-func (conn *Connection[T1, T2, T3]) Run(ctx context.Context, in <-chan T1, out chan<- T3) error {
+// Run two tasks that the Connection contains.
+func (conn *Connection[S, M, T]) Run(ctx context.Context, in <-chan S, out chan<- T) error {
 	defer conn.RunDeferred()
 	grp, ctx := errgroup.WithContext(ctx)
 	grp.Go(func() error { return conn.Src.Run(ctx, in, conn.c) })

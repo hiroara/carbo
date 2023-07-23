@@ -17,6 +17,6 @@ func TestParse(t *testing.T) {
 	err := config.Parse("../testdata/config.yaml", &cfg)
 	require.NoError(t, err)
 
-	assert.Equal(t, "thisisstring", cfg.StringField)
+	assert.Equal(t, "value-from-string-field", cfg.StringField)
 	assert.Equal(t, 100, cfg.IntField)
 }

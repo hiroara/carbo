@@ -1,2 +1,2 @@
-string_field: thisisstring
+string_field: value-from-string-field
 int_field: 100

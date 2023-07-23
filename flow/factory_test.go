@@ -71,7 +71,7 @@ func TestFactoryStart(t *testing.T) {
 		err := fac.Start(context.Background())
 		require.NoError(t, err)
 
-		assert.Equal(t, "thisisstring", cfg.StringField) // Decoded config is passed to the factory function
+		assert.Equal(t, "value-from-string-field", cfg.StringField) // Decoded config is passed to the factory function
 	})
 
 	t.Run("ErrorCase", func(t *testing.T) {
@@ -107,5 +107,5 @@ func TestRunWithConfig(t *testing.T) {
 	err := flow.RunWithConfig(context.Background(), fn, "../testdata/config.yaml")
 	require.NoError(t, err)
 
-	assert.Equal(t, "thisisstring", cfg.StringField) // Decoded config is passed to the factory function
+	assert.Equal(t, "value-from-string-field", cfg.StringField) // Decoded config is passed to the factory function
 }
