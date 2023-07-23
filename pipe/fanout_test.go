@@ -15,6 +15,8 @@ import (
 )
 
 func TestFanout(t *testing.T) {
+	t.Parallel()
+
 	src := source.FromSlice([]int{1, 2, 3})
 
 	fo := pipe.Fanout[int](func(ctx context.Context, ss []string) ([]string, error) {
@@ -27,6 +29,9 @@ func TestFanout(t *testing.T) {
 		return strconv.FormatInt(int64(i*10), 10), nil
 	}).AsTask(), 2, 2)
 
+	deferredCalled := false
+	fo.Defer(func() { deferredCalled = true })
+
 	conn := task.Connect(src.AsTask(), fo.AsTask(), 2)
 
 	out := make([][]string, 0)
@@ -34,4 +39,6 @@ func TestFanout(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, [][]string{{"1", "10"}, {"2", "20"}, {"3", "30"}}, out)
+
+	assert.True(t, deferredCalled)
 }

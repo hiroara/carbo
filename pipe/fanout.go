@@ -7,10 +7,12 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
+	"github.com/hiroara/carbo/deferrer"
 	"github.com/hiroara/carbo/task"
 )
 
 type FanoutOp[S, I, T any] struct {
+	deferrer.Deferrer
 	aggregate FanoutAggregateFn[I, T]
 	tasks     []task.Task[S, I]
 	inputs    []chan S
@@ -30,6 +32,7 @@ func (op *FanoutOp[S, I, T]) Add(t task.Task[S, I], inBuffer, outBuffer int) {
 }
 
 func (op *FanoutOp[S, I, T]) Run(ctx context.Context, in <-chan S, out chan<- T) error {
+	defer op.RunDeferred()
 	grp, ctx := errgroup.WithContext(ctx)
 	grp.Go(func() error { return op.feed(in) })
 	for i := range op.tasks {

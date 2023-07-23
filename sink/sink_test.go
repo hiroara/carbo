@@ -30,6 +30,9 @@ func TestSinkRun(t *testing.T) {
 	sinkFn, items, called := createArraySink()
 	sink := sink.FromFn(sinkFn)
 
+	deferredCalled := false
+	sink.Defer(func() { deferredCalled = true })
+
 	in := make(chan string, 2)
 	out := make(chan struct{}, 1)
 	in <- "item1"
@@ -43,4 +46,6 @@ func TestSinkRun(t *testing.T) {
 
 	assert.Equal(t, []string{"item1", "item2"}, testutils.ReadItems(items))
 	assert.Len(t, testutils.ReadItems(called), 1)
+
+	assert.True(t, deferredCalled)
 }

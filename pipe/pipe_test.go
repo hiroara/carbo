@@ -31,7 +31,10 @@ func TestPipeRun(t *testing.T) {
 	t.Parallel()
 
 	pipeFn, called := createPipeFn(double)
-	pipe := pipe.FromFn(pipeFn)
+	p := pipe.FromFn(pipeFn)
+
+	deferredCalled := false
+	p.Defer(func() { deferredCalled = true })
 
 	in := make(chan string, 2)
 	out := make(chan string, 2)
@@ -39,25 +42,27 @@ func TestPipeRun(t *testing.T) {
 	in <- "item2"
 	close(in)
 
-	err := pipe.Run(context.Background(), in, out)
+	err := p.Run(context.Background(), in, out)
 	require.NoError(t, err)
 	close(called)
 
 	assert.Equal(t, "item1item1", <-out)
 	assert.Equal(t, "item2item2", <-out)
+
+	assert.True(t, deferredCalled)
 }
 
 func TestConcurrentPipe(t *testing.T) {
 	t.Parallel()
 
-	assertConcurrentPipe := func(pipe *pipe.Pipe[string, string]) {
+	assertConcurrentPipe := func(p *pipe.Pipe[string, string]) {
 		in := make(chan string, 2)
 		out := make(chan string, 2)
 		in <- "item1"
 		in <- "item2"
 		close(in)
 
-		err := pipe.Run(context.Background(), in, out)
+		err := p.Run(context.Background(), in, out)
 		require.NoError(t, err)
 
 		outputs := make([]string, 0)
@@ -72,12 +77,12 @@ func TestConcurrentPipe(t *testing.T) {
 
 		pipeFn1, called1 := createPipeFn(double)
 		pipeFn2, called2 := createPipeFn(double)
-		pipe := pipe.Concurrent([]*pipe.Pipe[string, string]{
+		p := pipe.Concurrent([]*pipe.Pipe[string, string]{
 			pipe.FromFn(pipeFn1),
 			pipe.FromFn(pipeFn2),
 		})
 
-		assertConcurrentPipe(pipe)
+		assertConcurrentPipe(p)
 		close(called1)
 		close(called2)
 
@@ -89,9 +94,9 @@ func TestConcurrentPipe(t *testing.T) {
 		t.Parallel()
 
 		fn, called := createPipeFn(double)
-		pipe := pipe.ConcurrentFromFn(fn, 2)
+		p := pipe.ConcurrentFromFn(fn, 2)
 
-		assertConcurrentPipe(pipe)
+		assertConcurrentPipe(p)
 		close(called)
 		assert.Len(t, testutils.ReadItems(called), 2)
 	})

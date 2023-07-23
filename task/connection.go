@@ -4,9 +4,12 @@ import (
 	"context"
 
 	"golang.org/x/sync/errgroup"
+
+	"github.com/hiroara/carbo/deferrer"
 )
 
 type Connection[T1, T2, T3 any] struct {
+	deferrer.Deferrer
 	Src  Task[T1, T2]
 	Dest Task[T2, T3]
 	c    chan T2
@@ -21,6 +24,7 @@ func (c *Connection[T1, T2, T3]) AsTask() Task[T1, T3] {
 }
 
 func (conn *Connection[T1, T2, T3]) Run(ctx context.Context, in <-chan T1, out chan<- T3) error {
+	defer conn.RunDeferred()
 	grp, ctx := errgroup.WithContext(ctx)
 	grp.Go(func() error { return conn.Src.Run(ctx, in, conn.c) })
 	grp.Go(func() error { return conn.Dest.Run(ctx, conn.c, out) })

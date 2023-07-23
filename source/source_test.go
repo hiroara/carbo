@@ -24,6 +24,9 @@ func TestSourceRun(t *testing.T) {
 
 	src := source.FromFn(createSourceFn([]string{"item1", "item2"}))
 
+	deferredCalled := false
+	src.Defer(func() { deferredCalled = true })
+
 	in := make(chan struct{})
 	out := make(chan string, 2)
 	close(in)
@@ -33,4 +36,6 @@ func TestSourceRun(t *testing.T) {
 
 	assert.Equal(t, "item1", <-out)
 	assert.Equal(t, "item2", <-out)
+
+	assert.True(t, deferredCalled)
 }

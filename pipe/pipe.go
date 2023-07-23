@@ -5,12 +5,14 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
+	"github.com/hiroara/carbo/deferrer"
 	"github.com/hiroara/carbo/task"
 )
 
 type PipeFn[S, T any] func(ctx context.Context, in <-chan S, out chan<- T) error
 
 type Pipe[S any, T any] struct {
+	deferrer.Deferrer
 	run PipeFn[S, T]
 }
 
@@ -24,6 +26,7 @@ func (p *Pipe[S, T]) AsTask() task.Task[S, T] {
 
 func (p *Pipe[S, T]) Run(ctx context.Context, in <-chan S, out chan<- T) error {
 	defer close(out)
+	defer p.RunDeferred()
 	return p.run(ctx, in, out)
 }
 

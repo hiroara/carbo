@@ -10,7 +10,6 @@ import (
 
 	"github.com/hiroara/carbo/cache"
 	"github.com/hiroara/carbo/flow"
-	"github.com/hiroara/carbo/messaging/marshal"
 	"github.com/hiroara/carbo/pipe"
 	"github.com/hiroara/carbo/sink"
 	"github.com/hiroara/carbo/source"
@@ -73,14 +72,12 @@ func TestMap(t *testing.T) {
 	t.Run("Cache", func(t *testing.T) {
 		t.Parallel()
 
-		ms := marshal.Gob[string]()
-		cs := cache.NewMemoryStore[[]byte]()
-		sp := cache.NewMarshalSpec[string, string, string](
+		cs := cache.NewMemoryStore[string]()
+		sp := cache.NewRawSpec[string, string, string](
 			cs,
 			func(el string) (*cache.StoreKey[string], error) {
 				return cache.Key(el), nil
 			},
-			ms,
 		)
 
 		out, err := runFlowWithMap(pipe.MapWithCache(fn, sp).AsTask())
@@ -89,13 +86,11 @@ func TestMap(t *testing.T) {
 		assert.ElementsMatch(t, []string{"item1item1", "item2item2", "item2item2"}, out)
 
 		ctx := context.Background()
-		bs, ok, err := cs.Get(ctx, "item1")
+		vp, err := cs.Get(ctx, "item1")
 		require.NoError(t, err)
 
-		if assert.True(t, ok) {
-			v, err := ms.Unmarshal(bs)
-			require.NoError(t, err)
-			assert.Equal(t, "item1item1", v)
+		if assert.NotNil(t, vp) {
+			assert.Equal(t, "item1item1", *vp)
 		}
 	})
 }

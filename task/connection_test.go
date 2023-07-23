@@ -31,6 +31,9 @@ func TestConnectionRun(t *testing.T) {
 
 	conn := task.Connect(src.AsTask(), sink.AsTask(), 1)
 
+	deferredCalled := false
+	conn.Defer(func() { deferredCalled = true })
+
 	in := make(chan struct{})
 	out := make(chan struct{})
 	close(in)
@@ -39,4 +42,6 @@ func TestConnectionRun(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, []string{"item1", "item2"}, items)
+
+	assert.True(t, deferredCalled)
 }
