@@ -62,7 +62,10 @@ func Example_flowFactory() {
 		return flow.FromTask(pr), nil
 	}
 
-	flow.RunWithConfig(context.Background(), fac, "testdata/config.yaml")
+	err := flow.RunWithConfig(context.Background(), fac, "testdata/config.yaml")
+	if err != nil {
+		log.Fatal(err)
+	}
 	// Output:
 	// value-from-string-field
 }
@@ -98,7 +101,10 @@ func Example_registry() {
 	r := registry.New()
 	r.Register("flow1", flow.NewFactory(fac1))
 	r.Register("flow2", flow.NewFactoryWithConfig(fac2, "testdata/config.yaml"))
-	r.Run(context.Background(), "flow2")
+	err := r.Run(context.Background(), "flow2")
+	if err != nil {
+		log.Fatal(err)
+	}
 	// Output:
 	// 100
 }
