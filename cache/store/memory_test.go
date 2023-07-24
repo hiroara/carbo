@@ -11,21 +11,21 @@ import (
 )
 
 func TestMemoryStore(t *testing.T) {
-	store := store.NewMemoryStore[string]()
+	t.Parallel()
+
+	cs := store.NewMemoryStore[string]()
 	ctx := context.Background()
 	key1 := "key-1"
 	value1 := "value-1"
 
-	vp, err := store.Get(ctx, key1)
+	vp, err := cs.Get(ctx, key1)
 	require.NoError(t, err)
-	assert.Nil(t, vp)
+	assert.Equal(t, store.Miss[string](), vp)
 
-	err = store.Set(ctx, key1, value1)
+	err = cs.Set(ctx, key1, value1)
 	require.NoError(t, err)
 
-	vp, err = store.Get(ctx, key1)
+	vp, err = cs.Get(ctx, key1)
 	require.NoError(t, err)
-	if assert.NotNil(t, vp) {
-		assert.Equal(t, value1, *vp)
-	}
+	assert.Equal(t, store.Hit(value1), vp)
 }

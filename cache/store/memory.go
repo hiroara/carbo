@@ -21,10 +21,9 @@ func NewMemoryStore[V any]() *MemoryStore[V] {
 func (cs *MemoryStore[V]) Get(ctx context.Context, key string) (Value[V], error) {
 	v, ok := cs.cache.Load(key)
 	if !ok {
-		return nil, nil
+		return Miss[V](), nil
 	}
-	val := v.(V)
-	return Value[V](&val), nil
+	return Hit(v.(V)), nil
 }
 
 // Store a value with a key.
