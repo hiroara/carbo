@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/hiroara/carbo/messaging/marshal"
+	"github.com/hiroara/carbo/marshal"
 	"github.com/hiroara/carbo/messaging/server"
 	"github.com/hiroara/carbo/pb"
 	"github.com/stretchr/testify/assert"

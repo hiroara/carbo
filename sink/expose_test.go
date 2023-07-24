@@ -13,7 +13,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/hiroara/carbo/flow"
-	"github.com/hiroara/carbo/messaging/marshal"
+	"github.com/hiroara/carbo/marshal"
 	"github.com/hiroara/carbo/pb"
 	"github.com/hiroara/carbo/sink"
 	"github.com/hiroara/carbo/source"

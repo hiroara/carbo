@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/hiroara/carbo/messaging/marshal"
+	"github.com/hiroara/carbo/marshal"
 )
 
 type dummyStruct struct {

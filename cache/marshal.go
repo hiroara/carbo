@@ -2,7 +2,7 @@ package cache
 
 import (
 	"github.com/hiroara/carbo/cache/store"
-	"github.com/hiroara/carbo/messaging/marshal"
+	"github.com/hiroara/carbo/marshal"
 )
 
 type marshalSpec[S, T, K any] struct {

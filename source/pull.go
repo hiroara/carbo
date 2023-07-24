@@ -5,7 +5,7 @@ import (
 
 	"google.golang.org/grpc"
 
-	"github.com/hiroara/carbo/messaging/marshal"
+	"github.com/hiroara/carbo/marshal"
 	"github.com/hiroara/carbo/pb"
 	"github.com/hiroara/carbo/task"
 )
