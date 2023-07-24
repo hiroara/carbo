@@ -15,7 +15,11 @@ func New() *Runner {
 }
 
 func (r *Runner) Run(ctx context.Context, command string) error {
-	return r.factories[command].Start(ctx)
+	f, err := r.factories[command].Build()
+	if err != nil {
+		return err
+	}
+	return f.Run(ctx)
 }
 
 func (r *Runner) Define(name string, factory flow.Factory) {

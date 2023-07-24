@@ -6,12 +6,15 @@ import (
 	"github.com/hiroara/carbo/config"
 )
 
+// An object to build a Flow.
 type Factory interface {
-	Start(ctx context.Context) error
+	Build() (*Flow, error)
 }
 
+// A function that defines how to build a Flow.
 type FactoryFn func() (*Flow, error)
 
+// A function that defines how to build a Flow with a configuration struct.
 type FactoryFnWithConfig[C any] func(cfg *C) (*Flow, error)
 
 type factory struct {
@@ -23,42 +26,51 @@ type factoryWithConfig[C any] struct {
 	cfgPath string
 }
 
+// Create a Factory with a FactoryFn.
 func NewFactory(fn FactoryFn) Factory {
 	return &factory{build: fn}
 }
 
+// Create a Factory with a FactoryFnWithConfig.
+// The passed cfgPath is read when building a Flow, and passed to the FactoryFnWithConfig.
 func NewFactoryWithConfig[C any](fn FactoryFnWithConfig[C], cfgPath string) Factory {
 	return &factoryWithConfig[C]{build: fn, cfgPath: cfgPath}
 }
 
-func (f *factory) Start(ctx context.Context) error {
-	fl, err := f.build()
-	if err != nil {
-		return err
-	}
-
-	return fl.Run(ctx)
+func (f *factory) Build() (*Flow, error) {
+	return f.build()
 }
 
-func (f *factoryWithConfig[C]) Start(ctx context.Context) error {
+func (f *factoryWithConfig[C]) Build() (*Flow, error) {
 	var cfg C
 	err := config.Parse(f.cfgPath, &cfg)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	fl, err := f.build(&cfg)
+	return f.build(&cfg)
+}
+
+// Build a Flow with the passed FactoryFn and run it.
+//
+// This is a shorthand of creating a Factory with NewFactory, building a Flow with the Factory,
+// and running the built Flow.
+func Run(ctx context.Context, fn FactoryFn) error {
+	f, err := NewFactory(fn).Build()
 	if err != nil {
 		return err
 	}
-
-	return fl.Run(ctx)
+	return f.Run(ctx)
 }
 
-func Run(ctx context.Context, fn FactoryFn) error {
-	return NewFactory(fn).Start(ctx)
-}
-
+// Build a Flow with the passed FactoryFnWithConfig and run it.
+//
+// This is a shorthand of creating a Factory with NewFactoryWithConfig, building a Flow with the Factory,
+// and running the built Flow.
 func RunWithConfig[C any](ctx context.Context, fn FactoryFnWithConfig[C], cfgPath string) error {
-	return NewFactoryWithConfig(fn, cfgPath).Start(ctx)
+	f, err := NewFactoryWithConfig(fn, cfgPath).Build()
+	if err != nil {
+		return err
+	}
+	return f.Run(ctx)
 }

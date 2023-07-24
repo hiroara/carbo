@@ -55,7 +55,9 @@ func TestFactoryStart(t *testing.T) {
 		fn, called := createFactoryFn()
 		fac := flow.NewFactory(fn)
 
-		err := fac.Start(context.Background())
+		f, err := fac.Build()
+		require.NoError(t, err)
+		err = f.Run(context.Background())
 		require.NoError(t, err)
 		assert.True(t, *called)
 	})
@@ -68,7 +70,9 @@ func TestFactoryStart(t *testing.T) {
 
 		assert.Zero(t, *cfg)
 
-		err := fac.Start(context.Background())
+		f, err := fac.Build()
+		require.NoError(t, err)
+		err = f.Run(context.Background())
 		require.NoError(t, err)
 
 		assert.Equal(t, "value-from-string-field", cfg.StringField) // Decoded config is passed to the factory function
@@ -83,7 +87,7 @@ func TestFactoryStart(t *testing.T) {
 			return nil, factoryErr
 		})
 
-		err := fac.Start(context.Background())
+		_, err := fac.Build()
 		require.ErrorIs(t, err, factoryErr)
 	})
 }
