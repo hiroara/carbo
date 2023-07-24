@@ -23,6 +23,7 @@ type Source[T any] task.Task[struct{}, T]
 // A function that defines a Source's behavior.
 // This function should send elements to the passed output channel.
 // Please note that this function should not close the output channel.
+// The whole pipeline will be aborted when the returned error is not nil.
 type SourceFn[T any] func(ctx context.Context, out chan<- T) error
 
 // Build a Source with a SourceFn.

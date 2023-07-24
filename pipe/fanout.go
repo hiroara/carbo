@@ -11,6 +11,10 @@ import (
 	"github.com/hiroara/carbo/task"
 )
 
+// A Pipe task that has multiple downstream tasks, and aggregates those results.
+// Each input to this operator is sent to all its downstreams and processed by them,
+// and those results will be passed to this operator's aggregate function.
+// This operator emits elements that the aggregate function returns.
 type FanoutOp[S, I, T any] struct {
 	deferrer.Deferrer
 	aggregate FanoutAggregateFn[I, T]
@@ -19,18 +23,24 @@ type FanoutOp[S, I, T any] struct {
 	outputs   []chan I
 }
 
-type FanoutAggregateFn[S, T any] func(context.Context, []S) (T, error)
-
+// Create a fanout operator from an aggregate function.
 func Fanout[S, I, T any](aggFn FanoutAggregateFn[I, T]) *FanoutOp[S, I, T] {
 	return &FanoutOp[S, I, T]{aggregate: aggFn}
 }
 
+// A function to aggregate results from downstream tasks.
+// It is ensured that all of the passed elements are created from the same input,
+// and the order of results is the same as the order of registered tasks.
+type FanoutAggregateFn[S, T any] func(context.Context, []S) (T, error)
+
+// Register a task as a downstream of the fanout operator.
 func (op *FanoutOp[S, I, T]) Add(t task.Task[S, I], inBuffer, outBuffer int) {
 	op.tasks = append(op.tasks, t)
 	op.inputs = append(op.inputs, make(chan S, inBuffer))
 	op.outputs = append(op.outputs, make(chan I, outBuffer))
 }
 
+// Run this fanout operator.
 func (op *FanoutOp[S, I, T]) Run(ctx context.Context, in <-chan S, out chan<- T) error {
 	defer op.RunDeferred()
 	grp, ctx := errgroup.WithContext(ctx)
@@ -45,6 +55,7 @@ func (op *FanoutOp[S, I, T]) Run(ctx context.Context, in <-chan S, out chan<- T)
 	return grp.Wait()
 }
 
+// Convert the fanout operator as a task.
 func (op *FanoutOp[S, I, T]) AsTask() task.Task[S, T] {
 	return task.Task[S, T](op)
 }
