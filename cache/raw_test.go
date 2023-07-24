@@ -7,10 +7,11 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/hiroara/carbo/cache"
+	"github.com/hiroara/carbo/cache/store"
 )
 
 func TestRawSpec(t *testing.T) {
-	store := cache.NewMemoryStore[string]()
+	store := store.NewMemoryStore[string]()
 	keyFn := func(s string) (*cache.StoreKey[string], error) {
 		return cache.Key("key:" + s), nil
 	}

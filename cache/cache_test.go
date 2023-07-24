@@ -5,16 +5,18 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/hiroara/carbo/cache"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/hiroara/carbo/cache"
+	"github.com/hiroara/carbo/cache/store"
 )
 
 func TestRun(t *testing.T) {
 	t.Parallel()
 
 	createSpec := func(keyFn cache.KeyFn[string, string]) cache.Spec[string, string, string, string] {
-		cs := cache.NewMemoryStore[string]()
+		cs := store.NewMemoryStore[string]()
 		return cache.NewRawSpec[string, string, string](cs, keyFn)
 	}
 

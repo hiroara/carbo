@@ -7,11 +7,12 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/hiroara/carbo/cache"
+	"github.com/hiroara/carbo/cache/store"
 	"github.com/hiroara/carbo/marshal"
 )
 
 func TestMarshalSpec(t *testing.T) {
-	store := cache.NewMemoryStore[[]byte]()
+	store := store.NewMemoryStore[[]byte]()
 	keyFn := func(s string) (*cache.StoreKey[string], error) {
 		return cache.Key("key:" + s), nil
 	}

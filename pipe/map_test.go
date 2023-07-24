@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/hiroara/carbo/cache"
+	"github.com/hiroara/carbo/cache/store"
 	"github.com/hiroara/carbo/flow"
 	"github.com/hiroara/carbo/pipe"
 	"github.com/hiroara/carbo/sink"
@@ -72,7 +73,7 @@ func TestMap(t *testing.T) {
 	t.Run("Cache", func(t *testing.T) {
 		t.Parallel()
 
-		cs := cache.NewMemoryStore[string]()
+		cs := store.NewMemoryStore[string]()
 		sp := cache.NewRawSpec[string, string, string](
 			cs,
 			func(el string) (*cache.StoreKey[string], error) {

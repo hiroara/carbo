@@ -7,13 +7,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/hiroara/carbo/cache"
 	"github.com/hiroara/carbo/cache/internal/entry"
 	"github.com/hiroara/carbo/cache/store"
 )
 
 func buildSpec() entry.Spec[string, string, []byte] {
-	cs := cache.NewMemoryStore[[]byte]()
+	cs := store.NewMemoryStore[[]byte]()
 	return &dummySpec{Store: store.Build[string, []byte](cs)}
 }
 

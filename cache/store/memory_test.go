@@ -1,4 +1,4 @@
-package cache_test
+package store_test
 
 import (
 	"context"
@@ -7,11 +7,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/hiroara/carbo/cache"
+	"github.com/hiroara/carbo/cache/store"
 )
 
 func TestMemoryStore(t *testing.T) {
-	store := cache.NewMemoryStore[string]()
+	store := store.NewMemoryStore[string]()
 	ctx := context.Background()
 	key1 := "key-1"
 	value1 := "value-1"
