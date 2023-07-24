@@ -1,4 +1,4 @@
-package runner_test
+package registry_test
 
 import (
 	"context"
@@ -8,16 +8,16 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/hiroara/carbo/flow"
-	"github.com/hiroara/carbo/runner"
+	"github.com/hiroara/carbo/registry"
 	"github.com/hiroara/carbo/sink"
 	"github.com/hiroara/carbo/source"
 	"github.com/hiroara/carbo/task"
 )
 
-func TestRunnerRun(t *testing.T) {
+func TestRegistryRun(t *testing.T) {
 	t.Parallel()
 
-	r := runner.New()
+	r := registry.New()
 
 	src := source.FromSlice([]string{"item1", "item2"})
 
@@ -26,7 +26,7 @@ func TestRunnerRun(t *testing.T) {
 	conn := task.Connect(src.AsTask(), sink.AsTask(), 2)
 	called := false
 
-	r.Define("flow1", flow.NewFactory(func() (*flow.Flow, error) {
+	r.Register("flow1", flow.NewFactory(func() (*flow.Flow, error) {
 		called = true
 		return flow.FromTask(conn), nil
 	}))

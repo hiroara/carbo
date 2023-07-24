@@ -7,7 +7,7 @@ import (
 
 	"github.com/hiroara/carbo/flow"
 	"github.com/hiroara/carbo/pipe"
-	"github.com/hiroara/carbo/runner"
+	"github.com/hiroara/carbo/registry"
 	"github.com/hiroara/carbo/sink"
 	"github.com/hiroara/carbo/source"
 	"github.com/hiroara/carbo/task"
@@ -67,9 +67,9 @@ func Example_flowFactory() {
 	// value-from-string-field
 }
 
-// Define multiple flow factories, register them to a runner, and run a flow.
+// Define multiple flow factories, register them to a registry, and run a flow.
 // This is useful to make an executable that takes a subcommand.
-func Example_runner() {
+func Example_registry() {
 	fac1 := func() (*flow.Flow, error) {
 		ss := source.FromSlice([]string{"item1"})
 		pr := task.Connect(
@@ -95,9 +95,9 @@ func Example_runner() {
 		return flow.FromTask(pr), nil
 	}
 
-	r := runner.New()
-	r.Define("flow1", flow.NewFactory(fac1))
-	r.Define("flow2", flow.NewFactoryWithConfig(fac2, "testdata/config.yaml"))
+	r := registry.New()
+	r.Register("flow1", flow.NewFactory(fac1))
+	r.Register("flow2", flow.NewFactoryWithConfig(fac2, "testdata/config.yaml"))
 	r.Run(context.Background(), "flow2")
 	// Output:
 	// 100
