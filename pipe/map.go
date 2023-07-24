@@ -28,7 +28,7 @@ func (op *MapOp[S, T]) AsTask() task.Task[S, T] {
 }
 
 // Create a concurrent Pipe from multiple map operators that have the same behavior.
-func (op *MapOp[S, T]) Concurrent(concurrency int) *Pipe[S, T] {
+func (op *MapOp[S, T]) Concurrent(concurrency int) Pipe[S, T] {
 	return ConcurrentFromFn(op.pipeFn(), concurrency)
 }
 

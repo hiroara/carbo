@@ -4,16 +4,17 @@ import (
 	"context"
 	"testing"
 
-	"github.com/hiroara/carbo/internal/testutils"
-	"github.com/hiroara/carbo/pipe"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/hiroara/carbo/internal/testutils"
+	"github.com/hiroara/carbo/pipe"
 )
 
 func TestConcurrentPipe(t *testing.T) {
 	t.Parallel()
 
-	assertConcurrentPipe := func(p *pipe.Pipe[string, string]) {
+	assertConcurrentPipe := func(p pipe.Pipe[string, string]) {
 		in := make(chan string, 2)
 		out := make(chan string, 2)
 		in <- "item1"
@@ -35,7 +36,7 @@ func TestConcurrentPipe(t *testing.T) {
 
 		pipeFn1, called1 := createPipeFn(double)
 		pipeFn2, called2 := createPipeFn(double)
-		p := pipe.Concurrent([]*pipe.Pipe[string, string]{
+		p := pipe.Concurrent([]pipe.Pipe[string, string]{
 			pipe.FromFn(pipeFn1),
 			pipe.FromFn(pipeFn2),
 		})
