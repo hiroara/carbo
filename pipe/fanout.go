@@ -28,10 +28,27 @@ func Fanout[S, I, T any](aggFn FanoutAggregateFn[I, T]) *FanoutOp[S, I, T] {
 	return &FanoutOp[S, I, T]{aggregate: aggFn}
 }
 
-// A function to aggregate results from downstream tasks.
+// Create a fanout operator from a map function.
+func FanoutWithMap[S, I, T any](mapFn FanoutMapFn[I, T]) *FanoutOp[S, I, T] {
+	aggFn := func(ctx context.Context, els []I, out chan<- T) error {
+		o, err := mapFn(ctx, els)
+		if err != nil {
+			return err
+		}
+		out <- o
+		return nil
+	}
+	return &FanoutOp[S, I, T]{aggregate: aggFn}
+}
+
+// A function to aggregate results from downstream tasks, and send outputs to the passed output channel.
 // It is ensured that all of the passed elements are created from the same input,
 // and the order of results is the same as the order of registered tasks.
-type FanoutAggregateFn[S, T any] func(context.Context, []S) (T, error)
+type FanoutAggregateFn[I, T any] func(context.Context, []I, chan<- T) error
+
+// A function to aggregate results from downstream tasks, and return an output.
+// This is a variation of FanoutAggregateFn that emits only one output.
+type FanoutMapFn[I, T any] func(context.Context, []I) (T, error)
 
 // Register a task as a downstream of the fanout operator.
 func (op *FanoutOp[S, I, T]) Add(t task.Task[S, I], inBuffer, outBuffer int) {
@@ -99,11 +116,10 @@ func (op *FanoutOp[S, I, T]) emit(ctx context.Context, out chan<- T) error {
 			}
 			els[i] = el
 		}
-		r, err := op.aggregate(ctx, els)
+		err := op.aggregate(ctx, els, out)
 		if err != nil {
 			return err
 		}
-		out <- r
 	}
 }
 

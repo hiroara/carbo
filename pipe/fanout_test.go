@@ -19,26 +19,55 @@ func TestFanout(t *testing.T) {
 
 	src := source.FromSlice([]int{1, 2, 3})
 
-	fo := pipe.Fanout[int](func(ctx context.Context, ss []string) ([]string, error) {
-		return ss, nil
+	setup := func(fo *pipe.FanoutOp[int, string, []string]) *bool {
+		fo.Add(pipe.Map(func(ctx context.Context, i int) (string, error) {
+			return strconv.FormatInt(int64(i), 10), nil
+		}).AsTask(), 2, 2)
+		fo.Add(pipe.Map(func(ctx context.Context, i int) (string, error) {
+			return strconv.FormatInt(int64(i*10), 10), nil
+		}).AsTask(), 2, 2)
+
+		deferredCalled := false
+		fo.Defer(func() { deferredCalled = true })
+		return &deferredCalled
+	}
+
+	t.Run("WithFanoutAggregateFn", func(t *testing.T) {
+		fo := pipe.Fanout[int](func(ctx context.Context, ss []string, out chan<- []string) error {
+			for _, s := range ss {
+				out <- []string{s}
+			}
+			return nil
+		})
+
+		deferredCalled := setup(fo)
+
+		conn := task.Connect(src.AsTask(), fo.AsTask(), 2)
+
+		out := make([][]string, 0)
+		err := flow.FromTask(task.Connect(conn, sink.ToSlice(&out).AsTask(), 2)).Run(context.Background())
+		require.NoError(t, err)
+
+		assert.Equal(t, [][]string{{"1"}, {"10"}, {"2"}, {"20"}, {"3"}, {"30"}}, out)
+
+		assert.True(t, *deferredCalled)
 	})
-	fo.Add(pipe.Map(func(ctx context.Context, i int) (string, error) {
-		return strconv.FormatInt(int64(i), 10), nil
-	}).AsTask(), 2, 2)
-	fo.Add(pipe.Map(func(ctx context.Context, i int) (string, error) {
-		return strconv.FormatInt(int64(i*10), 10), nil
-	}).AsTask(), 2, 2)
 
-	deferredCalled := false
-	fo.Defer(func() { deferredCalled = true })
+	t.Run("WithFanoutMapFn", func(t *testing.T) {
+		fo := pipe.FanoutWithMap[int](func(ctx context.Context, ss []string) ([]string, error) {
+			return ss, nil
+		})
 
-	conn := task.Connect(src.AsTask(), fo.AsTask(), 2)
+		deferredCalled := setup(fo)
 
-	out := make([][]string, 0)
-	err := flow.FromTask(task.Connect(conn, sink.ToSlice(&out).AsTask(), 2)).Run(context.Background())
-	require.NoError(t, err)
+		conn := task.Connect(src.AsTask(), fo.AsTask(), 2)
 
-	assert.Equal(t, [][]string{{"1", "10"}, {"2", "20"}, {"3", "30"}}, out)
+		out := make([][]string, 0)
+		err := flow.FromTask(task.Connect(conn, sink.ToSlice(&out).AsTask(), 2)).Run(context.Background())
+		require.NoError(t, err)
 
-	assert.True(t, deferredCalled)
+		assert.Equal(t, [][]string{{"1", "10"}, {"2", "20"}, {"3", "30"}}, out)
+
+		assert.True(t, *deferredCalled)
+	})
 }
