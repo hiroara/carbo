@@ -26,7 +26,7 @@ func Concurrent[S, T any](ps []Pipe[S, T]) Pipe[S, T] {
 	})
 }
 
-// Create a Pipe from multiple PipeFns.
+// Create a Pipe to run the provided PipeFn concurrently.
 // This is a shorthand to create a concurrent Pipe from Pipes with the same function.
 func ConcurrentFromFn[S, T any](fn PipeFn[S, T], concurrency int) Pipe[S, T] {
 	ps := make([]Pipe[S, T], concurrency)
