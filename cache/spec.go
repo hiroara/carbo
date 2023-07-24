@@ -1,6 +1,8 @@
 package cache
 
 import (
+	"context"
+
 	"github.com/hiroara/carbo/cache/internal/behavior"
 	"github.com/hiroara/carbo/cache/internal/entry"
 	"github.com/hiroara/carbo/cache/store"
@@ -14,8 +16,16 @@ type Spec[S, T, K, V any] interface {
 	Decode(V) (T, error)         // A function that decodes a stored value in a cache store into a cacheable function's result.
 }
 
+type spec[S, T, K, V any] struct {
+	Spec[S, T, K, V]
+}
+
+func (sp *spec[S, T, K, V]) Get(ctx context.Context, key K) (*V, error) {
+	return sp.Spec.Get(ctx, key)
+}
+
 func getBehavior[S, T, K, V any](sp Spec[S, T, K, V], k *StoreKey[K]) behavior.Behavior[S, T] {
-	ent := entry.New[T, K, V](sp, k.key)
+	ent := entry.New[T, K, V](&spec[S, T, K, V]{sp}, k.key)
 
 	return behavior.New[S](behavior.Entry[T](ent), k.behavior)
 }

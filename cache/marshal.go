@@ -14,9 +14,9 @@ type marshalSpec[S, T, K any] struct {
 // Create a cache spec that uses marshaling to store a function's result.
 //
 // With this cache spec, any values will be stored as bytes data.
-func NewMarshalSpec[S, T, K any](cs store.Definition[K, []byte], keyFn KeyFn[S, K], valueSpec marshal.Spec[T]) Spec[S, T, K, []byte] {
+func NewMarshalSpec[S, T, K any](cs store.Store[K, []byte], keyFn KeyFn[S, K], valueSpec marshal.Spec[T]) Spec[S, T, K, []byte] {
 	return &marshalSpec[S, T, K]{
-		Store:     store.Build(cs),
+		Store:     cs,
 		keyFn:     keyFn,
 		valueSpec: valueSpec,
 	}

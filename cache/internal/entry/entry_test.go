@@ -13,11 +13,15 @@ import (
 
 func buildSpec() entry.Spec[string, string, []byte] {
 	cs := store.NewMemoryStore[[]byte]()
-	return &dummySpec{Store: store.Build[string, []byte](cs)}
+	return &dummySpec{Store: cs}
 }
 
 type dummySpec struct {
 	store.Store[string, []byte]
+}
+
+func (sp *dummySpec) Get(ctx context.Context, key string) (*[]byte, error) {
+	return sp.Store.Get(ctx, key)
 }
 
 func (sp *dummySpec) Decode(value []byte) (string, error) {
