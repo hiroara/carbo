@@ -10,6 +10,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/grpc/reflection"
 
 	"github.com/hiroara/carbo/internal/messaging/pb"
 )
@@ -111,6 +112,7 @@ func (s *Server) Run(ctx context.Context) error {
 	}()
 
 	pb.RegisterCommunicatorServer(srv, s)
+	reflection.Register(srv)
 	return srv.Serve(s.listener)
 }
 
