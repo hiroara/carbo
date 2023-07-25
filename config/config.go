@@ -6,6 +6,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+// Parse a YAML file and store data in the value pointed to by cfg.
 func Parse(path string, cfg interface{}) error {
 	bs, err := os.ReadFile(path)
 	if err != nil {
