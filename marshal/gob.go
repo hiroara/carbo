@@ -7,6 +7,9 @@ import (
 
 type gobSpec[S any] struct{}
 
+// Create a gob spec.
+//
+// This Spec converts a value into a gob format.
 func Gob[S any]() Spec[S] {
 	return &gobSpec[S]{}
 }

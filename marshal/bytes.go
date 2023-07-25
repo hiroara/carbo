@@ -1,11 +1,15 @@
 package marshal
 
+// Type compatible with byte array
 type BytesCompatible interface {
 	~string | []byte
 }
 
 type bytesSpec[S BytesCompatible] struct{}
 
+// Create a bytes spec.
+//
+// This Spec simply cast a BytesCompatible type into a byte array.
 func Bytes[S BytesCompatible]() Spec[S] {
 	return &bytesSpec[S]{}
 }
