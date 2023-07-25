@@ -11,7 +11,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/hiroara/carbo/pb"
+	"github.com/hiroara/carbo/internal/messaging/pb"
 )
 
 type Server struct {

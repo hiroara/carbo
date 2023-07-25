@@ -2,7 +2,7 @@ syntax = "proto3";
 
 import "message.proto";
 
-option go_package = "github.com/hiroara/carbo/pb";
+option go_package = "github.com/hiroara/carbo/internal/messaging/pb";
 
 service Communicator {
   rpc FillBatch(FillBatchRequest) returns (FillBatchResponse) {}

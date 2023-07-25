@@ -1,5 +1,5 @@
 .PHONY: compile
-compile: pb
+compile: internal/messaging/pb
 
 .PHONY: clean
 clean: clean-pb
@@ -7,9 +7,9 @@ clean: clean-pb
 .PHONY: recompile
 recompile: clean compile
 
-pb:
-	@mkdir -p pb && docker compose run --rm protoc
+internal/messaging/pb:
+	@mkdir -p internal/messaging/pb && docker compose run --rm protoc
 
 .PHONY: clean-pb
 clean-pb:
-	@rm -rf pb
+	@rm -rf internal/messaging/pb

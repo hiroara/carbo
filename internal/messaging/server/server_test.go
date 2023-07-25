@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/hiroara/carbo/internal/messaging/pb"
 	"github.com/hiroara/carbo/internal/messaging/server"
 	"github.com/hiroara/carbo/marshal"
-	"github.com/hiroara/carbo/pb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/sync/errgroup"

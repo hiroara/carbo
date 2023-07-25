@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option go_package = "github.com/hiroara/carbo/pb";
+option go_package = "github.com/hiroara/carbo/internal/messaging/pb";
 
 message Message {
   bytes value = 1;
