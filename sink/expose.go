@@ -6,8 +6,8 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
+	"github.com/hiroara/carbo/internal/messaging/server"
 	"github.com/hiroara/carbo/marshal"
-	"github.com/hiroara/carbo/messaging/server"
 	"github.com/hiroara/carbo/task"
 )
 
