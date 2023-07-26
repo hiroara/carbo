@@ -35,8 +35,7 @@ func FanoutWithMap[S, I, T any](mapFn FanoutMapFn[I, T]) *FanoutOp[S, I, T] {
 		if err != nil {
 			return err
 		}
-		out <- o
-		return nil
+		return task.Feed(ctx, out, o)
 	}
 	return &FanoutOp[S, I, T]{aggregate: aggFn}
 }

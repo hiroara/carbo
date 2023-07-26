@@ -39,7 +39,9 @@ func (op *MapOp[S, T]) pipeFn() PipeFn[S, T] {
 			if err != nil {
 				return err
 			}
-			out <- mapped
+			if err := task.Feed(ctx, out, mapped); err != nil {
+				return err
+			}
 		}
 		return nil
 	}

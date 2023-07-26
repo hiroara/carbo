@@ -55,9 +55,11 @@ func (op *PullOp[T]) AsSource() Source[T] {
 			for _, msg := range resp.Messages {
 				el, err := op.marshalSpec.Unmarshal(msg.Value)
 				if err != nil {
-					return nil
+					return err
 				}
-				out <- el
+				if err := task.Feed(ctx, out, el); err != nil {
+					return err
+				}
 			}
 		}
 		return nil

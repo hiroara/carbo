@@ -31,7 +31,7 @@ func TestMap(t *testing.T) {
 		out := make([]string, 0)
 		sin := sink.ToSlice(&out)
 
-		mapped := task.Connect(src.AsTask(), mappingTask, 2)
+		mapped := task.Connect(src.AsTask(), mappingTask, 0)
 		toSlice := task.Connect(mapped, sin.AsTask(), 2)
 
 		err := flow.FromTask(toSlice).Run(context.Background())
