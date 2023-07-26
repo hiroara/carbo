@@ -16,7 +16,7 @@ func FromSlice[T any](items []T) *SliceSourceOp[T] {
 	return &SliceSourceOp[T]{
 		run: func(ctx context.Context, out chan<- T) error {
 			for _, item := range items {
-				if err := task.Feed(ctx, out, item); err != nil {
+				if err := task.Emit(ctx, out, item); err != nil {
 					return err
 				}
 			}

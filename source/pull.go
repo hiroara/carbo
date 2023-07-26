@@ -57,7 +57,7 @@ func (op *PullOp[T]) AsSource() Source[T] {
 				if err != nil {
 					return err
 				}
-				if err := task.Feed(ctx, out, el); err != nil {
+				if err := task.Emit(ctx, out, el); err != nil {
 					return err
 				}
 			}
