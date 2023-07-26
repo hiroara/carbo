@@ -35,7 +35,11 @@ func (c *Connection[S, M, T]) AsTask() Task[S, T] {
 func (conn *Connection[S, M, T]) Run(ctx context.Context, in <-chan S, out chan<- T) error {
 	defer conn.RunDeferred()
 	grp, ctx := errgroup.WithContext(ctx)
+	ctx, cancel := context.WithCancel(ctx)
 	grp.Go(func() error { return conn.Src.Run(ctx, in, conn.c) })
-	grp.Go(func() error { return conn.Dest.Run(ctx, conn.c, out) })
+	grp.Go(func() error {
+		defer cancel()
+		return conn.Dest.Run(ctx, conn.c, out)
+	})
 	return grp.Wait()
 }
