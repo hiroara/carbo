@@ -23,7 +23,8 @@ type PullOp[T any] struct {
 //
 // The gRPC connection needs to be a connection with a Communicator service.
 // And, the marshal spec defines how elements exposed via the Communicator service should be decoded.
-// To successfully decode elements pulled from the Communicator service, the marshal spec needs to be the same one used to expose the data.
+// To successfully decode elements pulled from the Communicator service, the marshal spec needs to be
+// the same one used to expose the data.
 //
 // The batchSize argument defines the size of batches when pulling data from a Communicator service.
 // The larger batch size reduces the number of communication over a network, but also,

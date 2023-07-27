@@ -10,10 +10,17 @@ import (
 
 // Specification of a cache behavior.
 type Spec[S, T, K, V any] interface {
-	store.Store[K, V]            // Store that should be used as a cache store
-	Key(S) (*StoreKey[K], error) // A function that converts an argument into a cache key.
-	Encode(T) (V, error)         // A function that encodes a cacheable function's result into a value that will be stored in a cache store.
-	Decode(V) (T, error)         // A function that decodes a stored value in a cache store into a cacheable function's result.
+	// Store that should be used as a cache store
+	store.Store[K, V]
+
+	// A function that converts an argument into a cache key.
+	Key(S) (*StoreKey[K], error)
+
+	// A function that encodes a cacheable function's result into a value that will be stored in a cache store.
+	Encode(T) (V, error)
+
+	// A function that decodes a stored value in a cache store into a cacheable function's result.
+	Decode(V) (T, error)
 }
 
 type spec[S, T, K, V any] struct {

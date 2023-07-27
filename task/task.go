@@ -23,7 +23,8 @@ type Task[S, T any] interface {
 	// When a downstream task has finished without consuming all elements in its input channel, it is possible
 	// that an upstream task still runs without knowing its downstream task is already finished, and keeps trying
 	// to send values to its input channel. In this case, the upstream task can get stuck because of a full input channel.
-	// Checking ctx.Done() with the `select` clause when sending a value to the output channel is a solution to avoid this issue.
+	// Checking ctx.Done() with the `select` clause when sending a value to the output channel is a solution
+	// to avoid this issue.
 	// Please see Emit because the function is an easy shorthand to do this.
 	Run(ctx context.Context, in <-chan S, out chan<- T) error
 

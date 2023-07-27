@@ -39,10 +39,14 @@ func TestPull(t *testing.T) {
 
 	grp.Go(func() error { return exposeFlow.Run(ctx) })
 
-	conn, err := grpc.Dial(sock, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
-		d := net.Dialer{}
-		return d.DialContext(ctx, "unix", addr)
-	}))
+	dialOpts := []grpc.DialOption{
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
+			d := net.Dialer{}
+			return d.DialContext(ctx, "unix", addr)
+		}),
+	}
+	conn, err := grpc.Dial(sock, dialOpts...)
 	require.NoError(t, err)
 	pull := source.Pull(conn, ms, 3)
 	out := make([]string, 0)
