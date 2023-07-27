@@ -1,0 +1,12 @@
+#!/bin/sh
+
+set -e
+
+cd $(dirname $0)/..
+
+HTML_OUT=${HTML_OUT:-"cover.html"}
+
+go test -cover -coverprofile=cover.out ./...
+go tool cover -html=cover.out -o $HTML_OUT
+
+echo "$HTML_OUT generated."
