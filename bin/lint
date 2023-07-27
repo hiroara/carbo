@@ -4,4 +4,4 @@ set -e
 
 cd $(dirname $0)/..
 
-bin/toolkit gofumpt -l -w .
+bin/toolkit golangci-lint run

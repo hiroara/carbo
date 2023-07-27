@@ -30,18 +30,13 @@ services:
       - --proto_path=./proto
       - communicator.proto
       - message.proto
-  formatter:
+  toolkit:
     build:
       context: .
-      target: formatter
+      target: toolkit
     profiles:
       - tool
     volumes:
       - type: bind
         source: .
         target: /usr/local/go/src/github.com/hiroara/carbo
-    command:
-      - gofumpt
-      - -l
-      - -w
-      - .

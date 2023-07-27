@@ -27,6 +27,10 @@ EXPOSE 6060
 CMD ["godoc", "-http=:6060"]
 
 
-FROM base AS formatter
+FROM base AS toolkit
 
+# gofumpt
 RUN go install mvdan.cc/gofumpt@v0.5.0
+
+# golangci-lint
+RUN curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.53.3
