@@ -22,6 +22,8 @@ func TestTap(t *testing.T) {
 	src := source.FromSlice([]string{"item1", "item2"})
 
 	t.Run("NormalCase", func(t *testing.T) {
+		t.Parallel()
+
 		called := make(chan string, 2)
 		tap := task.Connect(src.AsTask(), pipe.Tap(func(ctx context.Context, el string) error {
 			called <- el
@@ -42,6 +44,8 @@ func TestTap(t *testing.T) {
 	})
 
 	t.Run("ErrorCase", func(t *testing.T) {
+		t.Parallel()
+
 		tapErr := errors.New("test error")
 		tap := task.Connect(src.AsTask(), pipe.Tap(func(ctx context.Context, el string) error {
 			return tapErr

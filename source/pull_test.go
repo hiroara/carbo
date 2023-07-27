@@ -20,6 +20,8 @@ import (
 )
 
 func TestPull(t *testing.T) {
+	t.Parallel()
+
 	ms := marshal.Bytes[string]()
 
 	dir := t.TempDir()

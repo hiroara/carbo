@@ -10,6 +10,8 @@ import (
 )
 
 func TestBytes(t *testing.T) {
+	t.Parallel()
+
 	data := "dummy data"
 	r := marshal.Bytes[string]()
 	bs, err := r.Marshal(data)

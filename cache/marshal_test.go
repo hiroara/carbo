@@ -12,6 +12,8 @@ import (
 )
 
 func TestMarshalSpec(t *testing.T) {
+	t.Parallel()
+
 	store := store.NewMemoryStore[[]byte]()
 	keyFn := func(s string) (*cache.StoreKey[string], error) {
 		return cache.Key("key:" + s), nil

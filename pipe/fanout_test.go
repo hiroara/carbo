@@ -33,6 +33,8 @@ func TestFanout(t *testing.T) {
 	}
 
 	t.Run("WithFanoutAggregateFn", func(t *testing.T) {
+		t.Parallel()
+
 		fo := pipe.Fanout[int](func(ctx context.Context, ss []string, out chan<- []string) error {
 			for _, s := range ss {
 				out <- []string{s}
@@ -54,6 +56,8 @@ func TestFanout(t *testing.T) {
 	})
 
 	t.Run("WithFanoutMapFn", func(t *testing.T) {
+		t.Parallel()
+
 		fo := pipe.FanoutWithMap[int](func(ctx context.Context, ss []string) ([]string, error) {
 			return ss, nil
 		})

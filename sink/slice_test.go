@@ -13,6 +13,8 @@ import (
 )
 
 func TestToSlice(t *testing.T) {
+	t.Parallel()
+
 	src := source.FromSlice([]string{"item1", "item2"})
 
 	s := make([]string, 0)

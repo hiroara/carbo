@@ -14,6 +14,8 @@ type dummyStruct struct {
 }
 
 func TestGob(t *testing.T) {
+	t.Parallel()
+
 	data := &dummyStruct{Value: "dummy data"}
 	m := marshal.Gob[*dummyStruct]()
 	bs, err := m.Marshal(data)

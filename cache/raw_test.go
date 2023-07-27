@@ -11,6 +11,8 @@ import (
 )
 
 func TestRawSpec(t *testing.T) {
+	t.Parallel()
+
 	store := store.NewMemoryStore[string]()
 	keyFn := func(s string) (*cache.StoreKey[string], error) {
 		return cache.Key("key:" + s), nil

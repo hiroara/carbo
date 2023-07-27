@@ -58,6 +58,8 @@ func TestElementWise(t *testing.T) {
 	})
 
 	t.Run("Concurrent", func(t *testing.T) {
+		t.Parallel()
+
 		out := make(chan string, 2)
 		op := createAppendOp(out)
 
