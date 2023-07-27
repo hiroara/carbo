@@ -4,4 +4,10 @@ set -e
 
 cd $(dirname $0)/..
 
-docker compose run --rm -it toolkit "$@"
+CONTAINER_OPTIONS="--rm"
+
+if [ "$NO_TTY" != "1" ]; then
+  CONTAINER_OPTIONS="$CONTAINER_OPTIONS -it"
+fi
+
+docker compose run $CONTAINER_OPTIONS toolkit "$@"

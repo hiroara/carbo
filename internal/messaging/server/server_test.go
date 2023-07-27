@@ -18,8 +18,6 @@ import (
 )
 
 func TestServer(t *testing.T) {
-	t.Parallel()
-
 	buildServer := func() *server.Server {
 		dir := t.TempDir()
 		sock := filepath.Join(dir, "srv.sock")
