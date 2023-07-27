@@ -4,10 +4,11 @@ import (
 	"context"
 	"testing"
 
-	"github.com/hiroara/carbo/internal/channel"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/sync/errgroup"
+
+	"github.com/hiroara/carbo/internal/channel"
 )
 
 func TestDuplicateOutChan(t *testing.T) {

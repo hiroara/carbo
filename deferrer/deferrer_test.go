@@ -3,8 +3,9 @@ package deferrer_test
 import (
 	"testing"
 
-	"github.com/hiroara/carbo/deferrer"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/hiroara/carbo/deferrer"
 )
 
 func TestDeferrer(t *testing.T) {

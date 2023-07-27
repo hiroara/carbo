@@ -4,9 +4,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/hiroara/carbo/source"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/hiroara/carbo/source"
 )
 
 func TestFromSlice(t *testing.T) {

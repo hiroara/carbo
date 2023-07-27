@@ -6,14 +6,15 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/hiroara/carbo/internal/messaging/pb"
-	"github.com/hiroara/carbo/internal/messaging/server"
-	"github.com/hiroara/carbo/marshal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	"github.com/hiroara/carbo/internal/messaging/pb"
+	"github.com/hiroara/carbo/internal/messaging/server"
+	"github.com/hiroara/carbo/marshal"
 )
 
 func TestServer(t *testing.T) {
