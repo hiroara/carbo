@@ -22,8 +22,8 @@ func FromTask(task task.Task[struct{}, struct{}]) *Flow {
 
 // Run this Flow.
 func (f *Flow) Run(ctx context.Context) error {
-	in := make(chan struct{}, 0)
-	out := make(chan struct{}, 0)
+	in := make(chan struct{})
+	out := make(chan struct{})
 	close(in) // Kick sources
 	return f.task.Run(ctx, in, out)
 }
