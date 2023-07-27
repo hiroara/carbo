@@ -1,0 +1,44 @@
+run:
+  skip-dirs:
+    - internal/messaging/pb
+
+linters:
+  enable:
+    - decorder
+    - errname
+    - exhaustive
+    - exportloopref
+    - funlen
+    - gci
+    - gocognit
+    - gocyclo
+    - goerr113
+    - gofumpt
+    - gosec
+    - grouper
+    - importas
+    - lll
+    - nestif
+    - nolintlint
+    - paralleltest
+    - stylecheck
+
+linters-settings:
+  gci:
+    sections:
+      - standard
+      - default
+      - prefix(github.com/hiroara/carbo/)
+      - blank
+      - dot
+
+issues:
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - goerr113
+        - funlen
+        - gocognit
+    - path: doc.go
+      linters:
+        - lll
