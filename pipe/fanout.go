@@ -99,6 +99,8 @@ func (op *FanoutOp[S, I, T]) feed(in <-chan S) error {
 	return nil
 }
 
+var errUnmatchingLength = errors.New("unmatching length of outputs detected")
+
 func (op *FanoutOp[S, I, T]) emit(ctx context.Context, out chan<- T) error {
 	defer close(out)
 	for {
@@ -109,7 +111,7 @@ func (op *FanoutOp[S, I, T]) emit(ctx context.Context, out chan<- T) error {
 			if i == 0 {
 				closed = !ok
 			} else if closed == ok {
-				return errors.New("Unmatching length of outputs detected")
+				return errUnmatchingLength
 			} else if i == len(op.outputs)-1 && closed {
 				return nil
 			}
