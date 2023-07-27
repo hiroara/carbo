@@ -9,8 +9,9 @@ import (
 // Each task takes an input channel and an output channel, and communicates with other tasks through them.
 //
 // Type parameters:
-//   S: Type of elements fed by an upstream task
-//   T: Type of elements that are passed to a downstream task
+//
+//	S: Type of elements fed by an upstream task
+//	T: Type of elements that are passed to a downstream task
 type Task[S, T any] interface {
 	// Run this task.
 	// Inputs for this task are provided via the `in` channel,

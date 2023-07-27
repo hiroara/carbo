@@ -28,8 +28,9 @@ type StoreKey[K any] struct {
 // This returns a StoreKey that expects a normal cache behavior.
 //
 // With this key, the expected behavior is:
-//   When a cached result exists, call a cacheable function, store the result, and return it.
-//   When a cached result does not exist, return the cached value.
+//
+//	When a cached result exists, call a cacheable function, store the result, and return it.
+//	When a cached result does not exist, return the cached value.
 func Key[K any](v K) *StoreKey[K] {
 	return &StoreKey[K]{key: v, behavior: behavior.CacheType}
 }
@@ -37,8 +38,9 @@ func Key[K any](v K) *StoreKey[K] {
 // This returns a StoreKey that expects a write-only cache behavior.
 //
 // With this key, the expected behavior is:
-//   When a cached result exists, call a cacheable function, store the result, and return it.
-//   When a cached result does not exist, call a cacheable function, overwrite the existing cache with the result, and return it.
+//
+//	When a cached result exists, call a cacheable function, store the result, and return it.
+//	When a cached result does not exist, call a cacheable function, overwrite the existing cache with the result, and return it.
 func WriteOnlyKey[K any](v K) *StoreKey[K] {
 	return &StoreKey[K]{key: v, behavior: behavior.WriteOnlyType}
 }
@@ -46,8 +48,9 @@ func WriteOnlyKey[K any](v K) *StoreKey[K] {
 // This returns a StoreKey that expects a bypass cache behavior.
 //
 // With this key, the expected behavior is:
-//   When a cached result exists, call a cacheable function, and return the result of the function.
-//   When a cached result does not exist, call a cacheable function, and return the result of the function.
+//
+//	When a cached result exists, call a cacheable function, and return the result of the function.
+//	When a cached result does not exist, call a cacheable function, and return the result of the function.
 func Bypass[K any]() *StoreKey[K] {
 	return &StoreKey[K]{behavior: behavior.BypassType}
 }

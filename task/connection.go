@@ -11,9 +11,10 @@ import (
 // Connection is a task that represents connected two tasks.
 //
 // Type parameters:
-//   S: Type of elements fed by an upstream task
-//   M: Type of elements that are sent from Src to Dest
-//   T: Type of elements that are passed to a downstream task
+//
+//	S: Type of elements fed by an upstream task
+//	M: Type of elements that are sent from Src to Dest
+//	T: Type of elements that are passed to a downstream task
 type Connection[S, M, T any] struct {
 	deferrer.Deferrer
 	Src  Task[S, M] // The first task that is contained in this Connection.
