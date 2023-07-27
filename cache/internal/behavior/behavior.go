@@ -27,7 +27,9 @@ func New[S, T any](entry Entry[T], t BehaviorType) Behavior[S, T] {
 		return &writeOnlyBehavior[S, T]{entry: entry}
 	case BypassType:
 		return &bypassBehavior[S, T]{entry: entry}
-	default: // CacheType:
+	default:
+		fallthrough // Fallback to CacheType
+	case CacheType:
 		return &cacheBehavior[S, T]{entry: entry}
 	}
 }
