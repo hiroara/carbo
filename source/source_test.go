@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/hiroara/carbo/source"
+	"github.com/hiroara/carbo/taskfn"
 )
 
 func createSourceFn(outputs []string) source.SourceFn[string] {
@@ -27,15 +28,12 @@ func TestSourceRun(t *testing.T) {
 	deferredCalled := false
 	src.Defer(func() { deferredCalled = true })
 
-	in := make(chan struct{})
-	out := make(chan string, 2)
-	close(in)
+	fn := taskfn.SourceToSlice(src)
 
-	err := src.Run(context.Background(), in, out)
+	out, err := fn(context.Background())
 	require.NoError(t, err)
 
-	assert.Equal(t, "item1", <-out)
-	assert.Equal(t, "item2", <-out)
+	assert.Equal(t, []string{"item1", "item2"}, out)
 
 	assert.True(t, deferredCalled)
 }

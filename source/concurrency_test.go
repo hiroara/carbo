@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/hiroara/carbo/source"
+	"github.com/hiroara/carbo/taskfn"
 )
 
 func TestConcurrentSource(t *testing.T) {
@@ -18,16 +19,10 @@ func TestConcurrentSource(t *testing.T) {
 		source.FromFn(createSourceFn([]string{"item3", "item4"})),
 	})
 
-	in := make(chan struct{})
-	out := make(chan string, 4)
-	close(in)
+	fn := taskfn.SourceToSlice(src)
 
-	err := src.Run(context.Background(), in, out)
+	out, err := fn(context.Background())
 	require.NoError(t, err)
 
-	outputs := make([]string, 0)
-	for item := range out {
-		outputs = append(outputs, item)
-	}
-	assert.ElementsMatch(t, []string{"item1", "item2", "item3", "item4"}, outputs)
+	assert.ElementsMatch(t, []string{"item1", "item2", "item3", "item4"}, out)
 }

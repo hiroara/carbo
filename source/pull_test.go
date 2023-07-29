@@ -17,28 +17,29 @@ import (
 	"github.com/hiroara/carbo/sink"
 	"github.com/hiroara/carbo/source"
 	"github.com/hiroara/carbo/task"
+	"github.com/hiroara/carbo/taskfn"
 )
 
 func TestPull(t *testing.T) {
 	t.Parallel()
 
 	ms := marshal.Bytes[string]()
+	data := []string{"message1", "message2", "message3"}
 
+	// Expose data
 	dir := t.TempDir()
 	sock := filepath.Join(dir, "srv.sock")
 	lis, err := net.Listen("unix", sock)
 	require.NoError(t, err)
 
-	data := []string{"message1", "message2", "message3"}
-	src := source.FromSlice(data)
-	sin := sink.Expose(lis, ms, 3)
-	exposeFlow := flow.FromTask(task.Connect(src.AsTask(), sin.AsTask(), 2))
+	expose := taskfn.SliceToSink(sink.Expose(lis, ms, 0).AsSink())
 
 	ctx := context.Background()
 	grp, ctx := errgroup.WithContext(ctx)
 
-	grp.Go(func() error { return exposeFlow.Run(ctx) })
+	grp.Go(func() error { return expose(ctx, data) })
 
+	// Pull data
 	dialOpts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
@@ -48,11 +49,15 @@ func TestPull(t *testing.T) {
 	}
 	conn, err := grpc.Dial(sock, dialOpts...)
 	require.NoError(t, err)
-	pull := source.Pull(conn, ms, 3)
-	out := make([]string, 0)
-	pullFlow := flow.FromTask(task.Connect(pull.AsTask(), sink.ToSlice(&out).AsTask(), 2))
 
-	grp.Go(func() error { return pullFlow.Run(ctx) })
+	out := make([]string, 0)
+	pull := task.Connect(
+		source.Pull(conn, ms, 0).AsTask(),
+		sink.ToSlice(&out).AsTask(),
+		0,
+	)
+
+	grp.Go(func() error { return flow.FromTask(pull).Run(ctx) })
 
 	require.NoError(t, grp.Wait())
 

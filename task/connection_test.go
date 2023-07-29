@@ -15,19 +15,10 @@ import (
 func TestConnectionRun(t *testing.T) {
 	t.Parallel()
 
-	src := source.FromFn(func(ctx context.Context, out chan<- string) error {
-		out <- "item1"
-		out <- "item2"
-		return nil
-	})
+	src := source.FromSlice([]string{"item1", "item2"})
 
-	items := make([]string, 0)
-	sink := sink.FromFn(func(ctx context.Context, in <-chan string) error {
-		for i := range in {
-			items = append(items, i)
-		}
-		return nil
-	})
+	outputs := make([]string, 0)
+	sink := sink.ToSlice(&outputs)
 
 	conn := task.Connect(src.AsTask(), sink.AsTask(), 1)
 
@@ -41,7 +32,7 @@ func TestConnectionRun(t *testing.T) {
 	err := conn.Run(context.Background(), in, out)
 	require.NoError(t, err)
 
-	assert.Equal(t, []string{"item1", "item2"}, items)
+	assert.Equal(t, []string{"item1", "item2"}, outputs)
 
 	assert.True(t, deferredCalled)
 }
