@@ -3,14 +3,8 @@ package source
 import (
 	"context"
 
-	"github.com/hiroara/carbo/deferrer"
 	"github.com/hiroara/carbo/task"
 )
-
-type source[T any] struct {
-	deferrer.Deferrer
-	run SourceFn[T]
-}
 
 // A task that is used as a starting point of a data pipeline.
 //
@@ -27,19 +21,9 @@ type Source[T any] task.Task[struct{}, T]
 type SourceFn[T any] func(ctx context.Context, out chan<- T) error
 
 // Build a Source with a SourceFn.
-func FromFn[T any](fn SourceFn[T]) Source[T] {
-	return &source[T]{run: fn}
-}
-
-// Convert the Source as a task.
-func (s *source[T]) AsTask() task.Task[struct{}, T] {
-	return task.Task[struct{}, T](s)
-}
-
-// Run this Source.
-func (s *source[T]) Run(ctx context.Context, in <-chan struct{}, out chan<- T) error {
-	<-in // Initial input channel will be closed immediately after starting the flow
-	defer close(out)
-	defer s.RunDeferred()
-	return s.run(ctx, out)
+func FromFn[T any](fn SourceFn[T], opts ...task.Option) Source[T] {
+	return task.FromFn(func(ctx context.Context, in <-chan struct{}, out chan<- T) error {
+		<-in // Initial input channel will be closed immediately after starting the flow
+		return fn(ctx, out)
+	}, opts...)
 }

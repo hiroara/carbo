@@ -8,13 +8,16 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/hiroara/carbo/source"
+	"github.com/hiroara/carbo/task"
 	"github.com/hiroara/carbo/taskfn"
 )
 
 func createSourceFn(outputs []string) source.SourceFn[string] {
 	return func(ctx context.Context, out chan<- string) error {
 		for _, item := range outputs {
-			out <- item
+			if err := task.Emit(ctx, out, item); err != nil {
+				return err
+			}
 		}
 		return nil
 	}
