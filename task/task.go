@@ -2,6 +2,9 @@ package task
 
 import (
 	"context"
+
+	"github.com/hiroara/carbo/deferrer"
+	"github.com/hiroara/carbo/task/internal/inout"
 )
 
 // Task is an interface that represents a component of a data pipeline.
@@ -37,4 +40,47 @@ type Task[S, T any] interface {
 	// More specifically, the registered function will be called just before the Run function returns its result.
 	// This can be used, for example, to close a file or a database connection when this task has completed.
 	Defer(func())
+}
+
+type task[S, T any] struct {
+	deferrer.Deferrer
+	TaskFn[S, T]
+	*options
+}
+
+// A function that defines a Task's behavior.
+// For more details, please see the Run function defined as a part of the Task interface.
+// Please note that this function should not close the output channel.
+// The whole pipeline will be aborted when the returned error is not nil.
+type TaskFn[S, T any] func(ctx context.Context, in <-chan S, out chan<- T) error
+
+// Build a Task with a TaskFn.
+func FromFn[S, T any](fn TaskFn[S, T], opts ...Option) Task[S, T] {
+	tOpts := &options{}
+	for _, opt := range opts {
+		opt(tOpts)
+	}
+	return &task[S, T]{TaskFn: fn, options: tOpts}
+}
+
+func (t *task[S, T]) AsTask() Task[S, T] {
+	return t
+}
+
+func (t *task[S, T]) Run(ctx context.Context, in <-chan S, out chan<- T) error {
+	defer t.RunDeferred()
+	ctx, in, out = t.wrapInOut(ctx, in, out)
+	defer close(out)
+	if err := t.TaskFn(ctx, in, out); err != nil {
+		return err
+	}
+	return context.Cause(ctx)
+}
+
+func (t *task[S, T]) wrapInOut(ctx context.Context, in <-chan S, out chan<- T) (context.Context, <-chan S, chan<- T) {
+	ip := inout.NewInput(in, newOptions(t.inOpts))
+	op := inout.NewOutput(out, newOptions(t.outOpts))
+	ctx = ip.StartWithContext(ctx)
+	ctx = op.StartWithContext(ctx)
+	return ctx, ip.Chan(), op.Chan()
 }

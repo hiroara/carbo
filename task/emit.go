@@ -9,7 +9,7 @@ import "context"
 func Emit[T any](ctx context.Context, out chan<- T, el T) error {
 	select {
 	case <-ctx.Done():
-		return ctx.Err()
+		return context.Cause(ctx)
 	case out <- el:
 		return nil
 	}
