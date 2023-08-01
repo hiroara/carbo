@@ -31,6 +31,7 @@ func WithTimeout(d time.Duration) InOutOption {
 }
 
 type options struct {
+	name    string
 	inOpts  []InOutOption
 	outOpts []InOutOption
 }
@@ -49,5 +50,13 @@ func WithInputOptions(opts ...InOutOption) Option {
 func WithOutputOptions(opts ...InOutOption) Option {
 	return func(tOpts *options) {
 		tOpts.outOpts = opts
+	}
+}
+
+// An Option to set name of a task.
+// This information can be used for debugging purpose.
+func WithName(name string) Option {
+	return func(opts *options) {
+		opts.name = name
 	}
 }

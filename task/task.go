@@ -5,6 +5,7 @@ import (
 
 	"github.com/hiroara/carbo/deferrer"
 	"github.com/hiroara/carbo/task/internal/inout"
+	"github.com/hiroara/carbo/task/internal/metadata"
 )
 
 // Task is an interface that represents a component of a data pipeline.
@@ -67,8 +68,13 @@ func (t *task[S, T]) AsTask() Task[S, T] {
 	return t
 }
 
+// GetName gets the current task name from a context.
+// If the task is runnining as a part of a task, this returns the most closest task's name.
+var GetName = metadata.GetName
+
 func (t *task[S, T]) Run(ctx context.Context, in <-chan S, out chan<- T) error {
 	defer t.RunDeferred()
+	ctx = metadata.WithName(ctx, t.name)
 	ctx, in, out = t.wrapInOut(ctx, in, out)
 	defer close(out)
 	if err := t.TaskFn(ctx, in, out); err != nil {
