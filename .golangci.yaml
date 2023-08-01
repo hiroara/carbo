@@ -33,6 +33,8 @@ linters-settings:
       - dot
 
 issues:
+  exclude:
+    - "Error return value of `op.client.Abort` is not checked"
   exclude-rules:
     - path: _test\.go
       linters:
