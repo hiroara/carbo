@@ -26,8 +26,8 @@ func FromSlice[T any](items []T) *SliceSourceOp[T] {
 }
 
 // Convert this operation as a Source.
-func (op *SliceSourceOp[T]) AsSource() Source[T] {
-	return FromFn(op.run)
+func (op *SliceSourceOp[T]) AsSource(opts ...task.Option) Source[T] {
+	return FromFn(op.run, opts...)
 }
 
 // Convert this operation as a Task.

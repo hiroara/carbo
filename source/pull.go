@@ -34,8 +34,8 @@ func Pull[T any](conn grpc.ClientConnInterface, m marshal.Spec[T], batchSize int
 }
 
 // Convert this operation as a Source.
-func (op *PullOp[T]) AsSource() Source[T] {
-	return FromFn(op.handleError(op.run))
+func (op *PullOp[T]) AsSource(opts ...task.Option) Source[T] {
+	return FromFn(op.handleError(op.run), opts...)
 }
 
 // Convert this operation as a Task.

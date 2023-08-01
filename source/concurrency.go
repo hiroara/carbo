@@ -6,11 +6,12 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/hiroara/carbo/internal/channel"
+	"github.com/hiroara/carbo/task"
 )
 
 // Create a Source from multiple Sources.
 // The passed Sources will run concurrently, and those outputs will be merged as outputs of the created Source.
-func Concurrent[T any](ss []Source[T]) Source[T] {
+func Concurrent[T any](ss []Source[T], opts ...task.Option) Source[T] {
 	return FromFn(func(ctx context.Context, out chan<- T) error {
 		grp, ctx := errgroup.WithContext(ctx)
 		outs, agg := channel.DuplicateOutChan(out, len(ss))
@@ -25,5 +26,5 @@ func Concurrent[T any](ss []Source[T]) Source[T] {
 		}
 		grp.Go(func() error { return agg(ctx) })
 		return grp.Wait()
-	})
+	}, opts...)
 }
