@@ -7,7 +7,6 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
-	"github.com/hiroara/carbo/deferrer"
 	"github.com/hiroara/carbo/task"
 )
 
@@ -16,7 +15,6 @@ import (
 // and those results will be passed to this operator's aggregate function.
 // This operator emits elements that the aggregate function returns.
 type FanoutOp[S, I, T any] struct {
-	deferrer.Deferrer
 	aggregate FanoutAggregateFn[I, T]
 	tasks     []task.Task[S, I]
 	inputs    []chan S
@@ -56,9 +54,13 @@ func (op *FanoutOp[S, I, T]) Add(t task.Task[S, I], inBuffer, outBuffer int) {
 	op.outputs = append(op.outputs, make(chan I, outBuffer))
 }
 
+// Convert the fanout operator as a task.
+func (op *FanoutOp[S, I, T]) AsTask() task.Task[S, T] {
+	return task.FromFn(op.run)
+}
+
 // Run this fanout operator.
-func (op *FanoutOp[S, I, T]) Run(ctx context.Context, in <-chan S, out chan<- T) error {
-	defer op.RunDeferred()
+func (op *FanoutOp[S, I, T]) run(ctx context.Context, in <-chan S, out chan<- T) error {
 	grp, ctx := errgroup.WithContext(ctx)
 	grp.Go(func() error { return op.feed(in) })
 	for i := range op.tasks {
@@ -69,11 +71,6 @@ func (op *FanoutOp[S, I, T]) Run(ctx context.Context, in <-chan S, out chan<- T)
 	}
 	grp.Go(func() error { return op.emit(ctx, out) })
 	return grp.Wait()
-}
-
-// Convert the fanout operator as a task.
-func (op *FanoutOp[S, I, T]) AsTask() task.Task[S, T] {
-	return task.Task[S, T](op)
 }
 
 func (op *FanoutOp[S, I, T]) feed(in <-chan S) error {
@@ -102,7 +99,6 @@ func (op *FanoutOp[S, I, T]) feed(in <-chan S) error {
 var errUnmatchingLength = errors.New("unmatching length of outputs detected")
 
 func (op *FanoutOp[S, I, T]) emit(ctx context.Context, out chan<- T) error {
-	defer close(out)
 	for {
 		var closed bool
 		els := make([]I, len(op.outputs))

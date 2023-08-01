@@ -20,17 +20,14 @@ func TestFanout(t *testing.T) {
 
 	src := source.FromSlice([]int{1, 2, 3})
 
-	setup := func(fo *pipe.FanoutOp[int, string, []string]) *bool {
+	setup := func(fo *pipe.FanoutOp[int, string, []string]) task.Task[int, []string] {
 		fo.Add(pipe.Map(func(ctx context.Context, i int) (string, error) {
 			return strconv.FormatInt(int64(i), 10), nil
 		}).AsTask(), 2, 2)
 		fo.Add(pipe.Map(func(ctx context.Context, i int) (string, error) {
 			return strconv.FormatInt(int64(i*10), 10), nil
 		}).AsTask(), 2, 2)
-
-		deferredCalled := false
-		fo.Defer(func() { deferredCalled = true })
-		return &deferredCalled
+		return fo.AsTask()
 	}
 
 	t.Run("WithFanoutAggregateFn", func(t *testing.T) {
@@ -43,9 +40,11 @@ func TestFanout(t *testing.T) {
 			return nil
 		})
 
-		deferredCalled := setup(fo)
+		fot := setup(fo)
+		deferredCalled := false
+		fot.Defer(func() { deferredCalled = true })
 
-		conn := task.Connect(src.AsTask(), fo.AsTask(), 2)
+		conn := task.Connect(src.AsTask(), fot, 2)
 
 		out := make([][]string, 0)
 		err := flow.FromTask(task.Connect(conn, sink.ToSlice(&out).AsTask(), 2)).Run(context.Background())
@@ -53,7 +52,7 @@ func TestFanout(t *testing.T) {
 
 		assert.Equal(t, [][]string{{"1"}, {"10"}, {"2"}, {"20"}, {"3"}, {"30"}}, out)
 
-		assert.True(t, *deferredCalled)
+		assert.True(t, deferredCalled)
 	})
 
 	t.Run("WithFanoutMapFn", func(t *testing.T) {
@@ -63,9 +62,11 @@ func TestFanout(t *testing.T) {
 			return ss, nil
 		})
 
-		deferredCalled := setup(fo)
+		fot := setup(fo)
+		deferredCalled := false
+		fot.Defer(func() { deferredCalled = true })
 
-		conn := task.Connect(src.AsTask(), fo.AsTask(), 2)
+		conn := task.Connect(src.AsTask(), fot, 2)
 
 		out := make([][]string, 0)
 		err := flow.FromTask(task.Connect(conn, sink.ToSlice(&out).AsTask(), 2)).Run(context.Background())
@@ -73,6 +74,6 @@ func TestFanout(t *testing.T) {
 
 		assert.Equal(t, [][]string{{"1", "10"}, {"2", "20"}, {"3", "30"}}, out)
 
-		assert.True(t, *deferredCalled)
+		assert.True(t, deferredCalled)
 	})
 }
