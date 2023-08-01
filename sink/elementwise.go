@@ -29,8 +29,8 @@ func ElementWise[S any](fn ElementWiseFn[S]) *ElementWiseOp[S] {
 }
 
 // Convert the elementwise operator as a sink.
-func (op *ElementWiseOp[S]) AsSink() Sink[S] {
-	return FromFn(op.run)
+func (op *ElementWiseOp[S]) AsSink(opts ...task.Option) Sink[S] {
+	return FromFn(op.run, opts...)
 }
 
 // Convert the elementwise operator as a task.

@@ -17,13 +17,13 @@ func ToSlice[S any](s *[]S) *ToSliceOp[S] {
 }
 
 // Convert this operation as a Sink.
-func (op *ToSliceOp[S]) AsSink() Sink[S] {
+func (op *ToSliceOp[S]) AsSink(opts ...task.Option) Sink[S] {
 	result := *op.result
 	return ElementWise(func(ctx context.Context, s S) error {
 		result = append(result, s)
 		*op.result = result
 		return nil
-	}).AsSink()
+	}).AsSink(opts...)
 }
 
 // Convert this operation as a Task.

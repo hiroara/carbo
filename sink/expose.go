@@ -33,7 +33,7 @@ func Expose[S any](lis net.Listener, m marshal.Spec[S], buffer int) *ExposeOp[S]
 }
 
 // Convert the elementwise operator as a sink.
-func (op *ExposeOp[S]) AsSink() Sink[S] {
+func (op *ExposeOp[S]) AsSink(opts ...task.Option) Sink[S] {
 	return FromFn(func(ctx context.Context, in <-chan S) error {
 		grp, ctx := errgroup.WithContext(ctx)
 		grp.Go(func() error { return op.server.Run(ctx) })
@@ -49,7 +49,7 @@ func (op *ExposeOp[S]) AsSink() Sink[S] {
 			return nil
 		})
 		return grp.Wait()
-	})
+	}, opts...)
 }
 
 // Convert the elementwise operator as a task.
