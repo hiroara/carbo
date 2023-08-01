@@ -21,6 +21,7 @@ const _ = grpc.SupportPackageIsVersion7
 const (
 	Communicator_FillBatch_FullMethodName = "/Communicator/FillBatch"
 	Communicator_GetBatch_FullMethodName  = "/Communicator/GetBatch"
+	Communicator_Abort_FullMethodName     = "/Communicator/Abort"
 )
 
 // CommunicatorClient is the client API for Communicator service.
@@ -29,6 +30,7 @@ const (
 type CommunicatorClient interface {
 	FillBatch(ctx context.Context, in *FillBatchRequest, opts ...grpc.CallOption) (*FillBatchResponse, error)
 	GetBatch(ctx context.Context, in *GetBatchRequest, opts ...grpc.CallOption) (*GetBatchResponse, error)
+	Abort(ctx context.Context, in *AbortRequest, opts ...grpc.CallOption) (*AbortResponse, error)
 }
 
 type communicatorClient struct {
@@ -57,12 +59,22 @@ func (c *communicatorClient) GetBatch(ctx context.Context, in *GetBatchRequest, 
 	return out, nil
 }
 
+func (c *communicatorClient) Abort(ctx context.Context, in *AbortRequest, opts ...grpc.CallOption) (*AbortResponse, error) {
+	out := new(AbortResponse)
+	err := c.cc.Invoke(ctx, Communicator_Abort_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // CommunicatorServer is the server API for Communicator service.
 // All implementations must embed UnimplementedCommunicatorServer
 // for forward compatibility
 type CommunicatorServer interface {
 	FillBatch(context.Context, *FillBatchRequest) (*FillBatchResponse, error)
 	GetBatch(context.Context, *GetBatchRequest) (*GetBatchResponse, error)
+	Abort(context.Context, *AbortRequest) (*AbortResponse, error)
 	mustEmbedUnimplementedCommunicatorServer()
 }
 
@@ -75,6 +87,9 @@ func (UnimplementedCommunicatorServer) FillBatch(context.Context, *FillBatchRequ
 }
 func (UnimplementedCommunicatorServer) GetBatch(context.Context, *GetBatchRequest) (*GetBatchResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetBatch not implemented")
+}
+func (UnimplementedCommunicatorServer) Abort(context.Context, *AbortRequest) (*AbortResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Abort not implemented")
 }
 func (UnimplementedCommunicatorServer) mustEmbedUnimplementedCommunicatorServer() {}
 
@@ -125,6 +140,24 @@ func _Communicator_GetBatch_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Communicator_Abort_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AbortRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CommunicatorServer).Abort(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Communicator_Abort_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CommunicatorServer).Abort(ctx, req.(*AbortRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Communicator_ServiceDesc is the grpc.ServiceDesc for Communicator service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -139,6 +172,10 @@ var Communicator_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetBatch",
 			Handler:    _Communicator_GetBatch_Handler,
+		},
+		{
+			MethodName: "Abort",
+			Handler:    _Communicator_Abort_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

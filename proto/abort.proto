@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+option go_package = "github.com/hiroara/carbo/internal/messaging/pb";
+
+message AbortReason {
+  string message = 1;
+}

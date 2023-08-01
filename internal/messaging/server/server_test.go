@@ -17,16 +17,16 @@ import (
 	"github.com/hiroara/carbo/marshal"
 )
 
-func TestServer(t *testing.T) {
-	buildServer := func() *server.Server {
-		dir := t.TempDir()
-		sock := filepath.Join(dir, "srv.sock")
-		lis, err := net.Listen("unix", sock)
-		require.NoError(t, err)
-
-		return server.New(lis, 2)
+func buildServer(dir string) (*server.Server, error) {
+	sock := filepath.Join(dir, "srv.sock")
+	lis, err := net.Listen("unix", sock)
+	if err != nil {
+		return nil, err
 	}
+	return server.New(lis, 2), nil
+}
 
+func TestServer(t *testing.T) {
 	ms := marshal.Bytes[string]()
 
 	feedMessage := func(ctx context.Context, srv *server.Server, msg string) error {
@@ -41,7 +41,8 @@ func TestServer(t *testing.T) {
 	t.Run("Normal", func(t *testing.T) {
 		t.Parallel()
 
-		srv := buildServer()
+		srv, err := buildServer(t.TempDir())
+		require.NoError(t, err)
 
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
@@ -62,15 +63,11 @@ func TestServer(t *testing.T) {
 		out := make([]string, 0)
 		grp.Go(func() error {
 			fbResp, err := srv.FillBatch(ctx, &pb.FillBatchRequest{Limit: 2})
-			if err != nil {
-				return err
-			}
+			require.NoError(t, err)
 			require.False(t, fbResp.End)
 
 			gbResp, err := srv.GetBatch(ctx, &pb.GetBatchRequest{})
-			if err != nil {
-				return err
-			}
+			require.NoError(t, err)
 			assert.Len(t, gbResp.Messages, 2)
 			for _, msg := range gbResp.Messages {
 				item, err := ms.Unmarshal(msg.Value)
@@ -81,15 +78,11 @@ func TestServer(t *testing.T) {
 			token := gbResp.Token
 
 			fbResp, err = srv.FillBatch(ctx, &pb.FillBatchRequest{Token: token, Limit: 2})
-			if err != nil {
-				return err
-			}
+			require.NoError(t, err)
 			require.False(t, fbResp.End)
 
 			gbResp, err = srv.GetBatch(ctx, &pb.GetBatchRequest{})
-			if err != nil {
-				return err
-			}
+			require.NoError(t, err)
 			assert.Len(t, gbResp.Messages, 1)
 			for _, msg := range gbResp.Messages {
 				item, err := ms.Unmarshal(msg.Value)
@@ -100,9 +93,7 @@ func TestServer(t *testing.T) {
 			token = gbResp.Token
 
 			fbResp, err = srv.FillBatch(ctx, &pb.FillBatchRequest{Token: token, Limit: 2})
-			if err != nil {
-				return err
-			}
+			require.NoError(t, err)
 			require.True(t, fbResp.End)
 
 			return nil
@@ -116,7 +107,8 @@ func TestServer(t *testing.T) {
 	t.Run("TokenUnmatch", func(t *testing.T) {
 		t.Parallel()
 
-		srv := buildServer()
+		srv, err := buildServer(t.TempDir())
+		require.NoError(t, err)
 
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
@@ -139,7 +131,7 @@ func TestServer(t *testing.T) {
 			return err
 		})
 
-		err := grp.Wait()
+		err = grp.Wait()
 		require.Error(t, err)
 
 		s, ok := status.FromError(err)
@@ -151,7 +143,8 @@ func TestServer(t *testing.T) {
 	t.Run("RepeatingGet", func(t *testing.T) {
 		t.Parallel()
 
-		srv := buildServer()
+		srv, err := buildServer(t.TempDir())
+		require.NoError(t, err)
 
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
@@ -173,23 +166,17 @@ func TestServer(t *testing.T) {
 			defer cancel() // Call cancel to abort other goroutines
 
 			fbResp, err := srv.FillBatch(ctx, &pb.FillBatchRequest{Limit: 2})
-			if err != nil {
-				return err
-			}
+			require.NoError(t, err)
 			require.False(t, fbResp.End)
 
 			gbResp, err := srv.GetBatch(ctx, &pb.GetBatchRequest{})
-			if err != nil {
-				return err
-			}
+			require.NoError(t, err)
 			assert.Len(t, gbResp.Messages, 2)
 			prevMsgs := gbResp.Messages
 
 			// Call GetBatch again.
 			gbResp, err = srv.GetBatch(ctx, &pb.GetBatchRequest{})
-			if err != nil {
-				return err
-			}
+			require.NoError(t, err)
 
 			// Can get the same batch again.
 			// This behavior is for letting a client retry in exceptional cases.
@@ -203,4 +190,28 @@ func TestServer(t *testing.T) {
 
 		require.NoError(t, grp.Wait())
 	})
+}
+
+func TestServerAbort(t *testing.T) {
+	t.Parallel()
+
+	srv, err := buildServer(t.TempDir())
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	grp, ctx := errgroup.WithContext(ctx)
+
+	grp.Go(func() error { return srv.Run(ctx) })
+
+	// Output
+	grp.Go(func() error {
+		_, err := srv.Abort(ctx, &pb.AbortRequest{Reason: &pb.AbortReason{Message: "abort for test"}})
+		require.NoError(t, err)
+		return nil
+	})
+
+	err = grp.Wait()
+	require.ErrorIs(t, err, server.ErrServiceAborted)
+	require.Contains(t, err.Error(), "abort for test")
 }

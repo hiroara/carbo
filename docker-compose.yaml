@@ -30,6 +30,7 @@ services:
       - --proto_path=./proto
       - communicator.proto
       - message.proto
+      - abort.proto
   toolkit:
     build:
       context: .

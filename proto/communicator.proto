@@ -1,12 +1,14 @@
 syntax = "proto3";
 
 import "message.proto";
+import "abort.proto";
 
 option go_package = "github.com/hiroara/carbo/internal/messaging/pb";
 
 service Communicator {
   rpc FillBatch(FillBatchRequest) returns (FillBatchResponse) {}
   rpc GetBatch(GetBatchRequest) returns (GetBatchResponse) {}
+  rpc Abort(AbortRequest) returns (AbortResponse) {}
 }
 
 message FillBatchRequest {
@@ -24,3 +26,9 @@ message GetBatchResponse {
   string token = 1;
   repeated Message messages = 2;
 }
+
+message AbortRequest {
+  AbortReason reason = 1;
+}
+
+message AbortResponse {}
