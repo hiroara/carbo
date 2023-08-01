@@ -23,7 +23,7 @@ func Concurrent[T any](ss []Source[T]) Source[T] {
 				return s.Run(ctx, in, o)
 			})
 		}
-		grp.Go(agg)
+		grp.Go(func() error { return agg(ctx) })
 		return grp.Wait()
 	})
 }

@@ -21,7 +21,7 @@ func Concurrent[S, T any](ps []Pipe[S, T]) Pipe[S, T] {
 				return p.Run(ctx, in, o)
 			})
 		}
-		grp.Go(agg)
+		grp.Go(func() error { return agg(ctx) })
 		return grp.Wait()
 	})
 }
