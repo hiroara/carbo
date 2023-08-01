@@ -35,7 +35,6 @@ func TestExpose(t *testing.T) {
 	conn := task.Connect(src.AsTask(), exp.AsTask(), 2)
 
 	grp, ctx := errgroup.WithContext(context.Background())
-	ctx, cancel := context.WithCancel(ctx)
 
 	grp.Go(func() error {
 		return flow.FromTask(conn).Run(ctx)
@@ -45,8 +44,6 @@ func TestExpose(t *testing.T) {
 	var gbResp *pb.GetBatchResponse
 
 	grp.Go(func() error {
-		defer cancel() // Call cancel to abort other goroutines
-
 		dialOpts := []grpc.DialOption{
 			grpc.WithTransportCredentials(insecure.NewCredentials()),
 			grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
@@ -60,16 +57,21 @@ func TestExpose(t *testing.T) {
 		cli := pb.NewCommunicatorClient(grpcConn)
 		fbResp, err = cli.FillBatch(ctx, &pb.FillBatchRequest{Limit: 3})
 		require.NoError(t, err)
+		assert.False(t, fbResp.End)
 
 		gbResp, err = cli.GetBatch(ctx, &pb.GetBatchRequest{})
 		require.NoError(t, err)
+
+		fbResp, err = cli.FillBatch(ctx, &pb.FillBatchRequest{Limit: 3, Token: gbResp.Token})
+		require.NoError(t, err)
+		assert.True(t, fbResp.End)
 
 		return nil
 	})
 
 	require.NoError(t, grp.Wait())
 
-	require.False(t, fbResp.End)
+	require.True(t, fbResp.End)
 	require.Len(t, gbResp.Messages, 2)
 
 	for i, msg := range gbResp.Messages {
