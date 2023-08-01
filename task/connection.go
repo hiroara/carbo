@@ -4,8 +4,6 @@ import (
 	"context"
 
 	"golang.org/x/sync/errgroup"
-
-	"github.com/hiroara/carbo/deferrer"
 )
 
 // Connection is a task that represents connected two tasks.
@@ -16,31 +14,36 @@ import (
 //	M: Type of elements that are sent from Src to Dest
 //	T: Type of elements that are passed to a downstream task
 type Connection[S, M, T any] struct {
-	deferrer.Deferrer
-	Src  Task[S, M] // The first task that is contained in this Connection.
-	Dest Task[M, T] // The second task that is contained in this Connection.
-	c    chan M
+	Src     Task[S, M] // The first task that is contained in this Connection.
+	Dest    Task[M, T] // The second task that is contained in this Connection.
+	srcOut  chan M
+	destOut chan T
 }
 
 // Connect two tasks as a Connection.
 func Connect[S, M, T any](src Task[S, M], dest Task[M, T], buf int) Task[S, T] {
-	return &Connection[S, M, T]{Src: src, Dest: dest, c: make(chan M, buf)}
-}
-
-// Convert the Connection as a task.
-func (c *Connection[S, M, T]) AsTask() Task[S, T] {
-	return Task[S, T](c)
+	conn := &Connection[S, M, T]{Src: src, Dest: dest, srcOut: make(chan M, buf), destOut: make(chan T)}
+	return FromFn(conn.run)
 }
 
 // Run two tasks that the Connection contains.
-func (conn *Connection[S, M, T]) Run(ctx context.Context, in <-chan S, out chan<- T) error {
-	defer conn.RunDeferred()
+func (conn *Connection[S, M, T]) run(ctx context.Context, in <-chan S, out chan<- T) error {
 	grp, ctx := errgroup.WithContext(ctx)
-	ctx, cancel := context.WithCancel(ctx)
-	grp.Go(func() error { return conn.Src.Run(ctx, in, conn.c) })
+
+	grp.Go(func() error { return conn.Src.Run(ctx, in, conn.srcOut) })
+
+	// destOut will be closed by Dest.
+	grp.Go(func() error { return conn.Dest.Run(ctx, conn.srcOut, conn.destOut) })
+
+	// out will be closed by *task.Run.
 	grp.Go(func() error {
-		defer cancel()
-		return conn.Dest.Run(ctx, conn.c, out)
+		for el := range conn.destOut {
+			if err := Emit(ctx, out, el); err != nil {
+				return err
+			}
+		}
+		return nil
 	})
+
 	return grp.Wait()
 }
