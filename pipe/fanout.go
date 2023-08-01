@@ -54,9 +54,14 @@ func (op *FanoutOp[S, I, T]) Add(t task.Task[S, I], inBuffer, outBuffer int) {
 	op.outputs = append(op.outputs, make(chan I, outBuffer))
 }
 
+// Convert the fanout operator as a Pipe.
+func (op *FanoutOp[S, I, T]) AsPipe(opts ...task.Option) Pipe[S, T] {
+	return FromFn(op.run, opts...)
+}
+
 // Convert the fanout operator as a task.
 func (op *FanoutOp[S, I, T]) AsTask() task.Task[S, T] {
-	return task.FromFn(op.run)
+	return op.AsPipe().AsTask()
 }
 
 // Run this fanout operator.

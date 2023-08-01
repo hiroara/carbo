@@ -22,9 +22,14 @@ func Map[S, T any](fn MapFn[S, T]) *MapOp[S, T] {
 	}
 }
 
+// Convert the map operator as a Pipe.
+func (op *MapOp[S, T]) AsPipe(opts ...task.Option) Pipe[S, T] {
+	return FromFn(op.pipeFn(), opts...)
+}
+
 // Convert the map operator as a task.
 func (op *MapOp[S, T]) AsTask() task.Task[S, T] {
-	return task.Task[S, T](FromFn(op.pipeFn()))
+	return op.AsPipe().AsTask()
 }
 
 // Create a concurrent Pipe from multiple map operators that have the same behavior.

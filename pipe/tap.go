@@ -20,8 +20,8 @@ func Tap[S any](fn TapFn[S]) *TapOp[S] {
 	return &TapOp[S]{run: fn}
 }
 
-// Convert the tap operator as a task.
-func (op *TapOp[S]) AsTask() task.Task[S, S] {
+// Convert the tap operator as a Pipe.
+func (op *TapOp[S]) AsPipe() Pipe[S, S] {
 	return Map(func(ctx context.Context, el S) (S, error) {
 		var zero S
 		err := op.run(ctx, el)
@@ -29,5 +29,10 @@ func (op *TapOp[S]) AsTask() task.Task[S, S] {
 			return zero, err
 		}
 		return el, nil
-	}).AsTask()
+	}).AsPipe()
+}
+
+// Convert the tap operator as a task.
+func (op *TapOp[S]) AsTask() task.Task[S, S] {
+	return op.AsPipe().AsTask()
 }
