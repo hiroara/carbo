@@ -14,6 +14,7 @@ import (
 //
 // This Source task can be used to pull data from another process that exposes data via a Communicator service.
 type PullOp[T any] struct {
+	operator[T]
 	batchSize   int
 	client      pb.CommunicatorClient
 	marshalSpec marshal.Spec[T]
@@ -30,20 +31,16 @@ type PullOp[T any] struct {
 // The larger batch size reduces the number of communication over a network, but also,
 // it let the process to wait for a large batch is fulfilled.
 func Pull[T any](conn grpc.ClientConnInterface, m marshal.Spec[T], batchSize int) *PullOp[T] {
-	return &PullOp[T]{batchSize: batchSize, client: pb.NewCommunicatorClient(conn), marshalSpec: m}
-}
-
-// Convert this operation as a Source.
-func (op *PullOp[T]) AsSource(opts ...task.Option) Source[T] {
-	return FromFn(op.handleError(op.run), opts...)
-}
-
-// Convert this operation as a Task.
-func (op *PullOp[T]) AsTask() task.Task[struct{}, T] {
-	return op.AsSource()
+	op := &PullOp[T]{batchSize: batchSize, client: pb.NewCommunicatorClient(conn), marshalSpec: m}
+	op.operator.run = op.run
+	return op
 }
 
 func (op *PullOp[T]) run(ctx context.Context, out chan<- T) error {
+	return op.handleError(op.pull)(ctx, out)
+}
+
+func (op *PullOp[T]) pull(ctx context.Context, out chan<- T) error {
 	lim := int32(op.batchSize)
 	fbResp, err := op.client.FillBatch(ctx, &pb.FillBatchRequest{Limit: lim})
 	if err != nil {

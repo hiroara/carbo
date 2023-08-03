@@ -8,29 +8,22 @@ import (
 
 // A Source task that emits elements in the passed slice.
 type SliceSourceOp[T any] struct {
-	run SourceFn[T]
+	operator[T]
+	items []T
 }
 
 // Create a SliceSourceOp from a slice.
 func FromSlice[T any](items []T) *SliceSourceOp[T] {
-	return &SliceSourceOp[T]{
-		run: func(ctx context.Context, out chan<- T) error {
-			for _, item := range items {
-				if err := task.Emit(ctx, out, item); err != nil {
-					return err
-				}
-			}
-			return nil
-		},
+	op := &SliceSourceOp[T]{items: items}
+	op.operator.run = op.run
+	return op
+}
+
+func (op *SliceSourceOp[T]) run(ctx context.Context, out chan<- T) error {
+	for _, item := range op.items {
+		if err := task.Emit(ctx, out, item); err != nil {
+			return err
+		}
 	}
-}
-
-// Convert this operation as a Source.
-func (op *SliceSourceOp[T]) AsSource(opts ...task.Option) Source[T] {
-	return FromFn(op.run, opts...)
-}
-
-// Convert this operation as a Task.
-func (op *SliceSourceOp[T]) AsTask() task.Task[struct{}, T] {
-	return op.AsSource()
+	return nil
 }
