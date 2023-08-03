@@ -15,6 +15,7 @@ import (
 // and those results will be passed to this operator's aggregate function.
 // This operator emits elements that the aggregate function returns.
 type FanoutOp[S, I, T any] struct {
+	operator[S, T]
 	aggregate FanoutAggregateFn[I, T]
 	tasks     []task.Task[S, I]
 	inputs    []chan S
@@ -23,7 +24,9 @@ type FanoutOp[S, I, T any] struct {
 
 // Create a fanout operator from an aggregate function.
 func Fanout[S, I, T any](aggFn FanoutAggregateFn[I, T]) *FanoutOp[S, I, T] {
-	return &FanoutOp[S, I, T]{aggregate: aggFn}
+	op := &FanoutOp[S, I, T]{aggregate: aggFn}
+	op.operator.run = op.run
+	return op
 }
 
 // Create a fanout operator from a map function.
@@ -35,7 +38,9 @@ func FanoutWithMap[S, I, T any](mapFn FanoutMapFn[I, T]) *FanoutOp[S, I, T] {
 		}
 		return task.Emit(ctx, out, o)
 	}
-	return &FanoutOp[S, I, T]{aggregate: aggFn}
+	op := &FanoutOp[S, I, T]{aggregate: aggFn}
+	op.operator.run = op.run
+	return op
 }
 
 // A function to aggregate results from downstream tasks, and send outputs to the passed output channel.
@@ -54,25 +59,13 @@ func (op *FanoutOp[S, I, T]) Add(t task.Task[S, I], inBuffer, outBuffer int) {
 	op.outputs = append(op.outputs, make(chan I, outBuffer))
 }
 
-// Convert the fanout operator as a Pipe.
-func (op *FanoutOp[S, I, T]) AsPipe(opts ...task.Option) Pipe[S, T] {
-	return FromFn(op.run, opts...)
-}
-
-// Convert the fanout operator as a task.
-func (op *FanoutOp[S, I, T]) AsTask() task.Task[S, T] {
-	return op.AsPipe().AsTask()
-}
-
 // Run this fanout operator.
 func (op *FanoutOp[S, I, T]) run(ctx context.Context, in <-chan S, out chan<- T) error {
 	grp, ctx := errgroup.WithContext(ctx)
 	grp.Go(func() error { return op.feed(in) })
 	for i := range op.tasks {
 		ic := i
-		grp.Go(func() error {
-			return op.runTask(ctx, ic)
-		})
+		grp.Go(func() error { return op.runTask(ctx, ic) })
 	}
 	grp.Go(func() error { return op.emit(ctx, out) })
 	return grp.Wait()
