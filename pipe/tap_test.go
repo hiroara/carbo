@@ -8,34 +8,24 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/hiroara/carbo/flow"
 	"github.com/hiroara/carbo/internal/testutils"
 	"github.com/hiroara/carbo/pipe"
-	"github.com/hiroara/carbo/sink"
-	"github.com/hiroara/carbo/source"
-	"github.com/hiroara/carbo/task"
+	"github.com/hiroara/carbo/taskfn"
 )
 
 func TestTap(t *testing.T) {
 	t.Parallel()
 
-	src := source.FromSlice([]string{"item1", "item2"})
-
 	t.Run("NormalCase", func(t *testing.T) {
 		t.Parallel()
 
 		called := make(chan string, 2)
-		tap := task.Connect(src.AsTask(), pipe.Tap(func(ctx context.Context, el string) error {
+		tap := taskfn.SliceToSlice(pipe.Tap(func(ctx context.Context, el string) error {
 			called <- el
 			return nil
-		}).AsTask(), 1)
+		}).AsTask())
 
-		out := []string{}
-		err := flow.FromTask(task.Connect(
-			tap,
-			sink.ToSlice(&out).AsTask(),
-			1,
-		)).Run(context.Background())
+		out, err := tap(context.Background(), []string{"item1", "item2"})
 		require.NoError(t, err)
 		close(called)
 
@@ -47,16 +37,28 @@ func TestTap(t *testing.T) {
 		t.Parallel()
 
 		tapErr := errors.New("test error")
-		tap := task.Connect(src.AsTask(), pipe.Tap(func(ctx context.Context, el string) error {
+		tap := taskfn.SliceToSlice(pipe.Tap(func(ctx context.Context, el string) error {
 			return tapErr
-		}).AsTask(), 1)
+		}).AsTask())
 
-		out := []string{}
-		err := flow.FromTask(task.Connect(
-			tap,
-			sink.ToSlice(&out).AsTask(),
-			1,
-		)).Run(context.Background())
+		_, err := tap(context.Background(), []string{"item1", "item2"})
 		require.ErrorIs(t, err, tapErr)
+	})
+
+	t.Run("Concurrent", func(t *testing.T) {
+		t.Parallel()
+
+		called := make(chan string, 2)
+		tap := taskfn.SliceToSlice(pipe.Tap(func(ctx context.Context, el string) error {
+			called <- el
+			return nil
+		}).Concurrent(2).AsTask())
+
+		out, err := tap(context.Background(), []string{"item1", "item2"})
+		require.NoError(t, err)
+		close(called)
+
+		assert.ElementsMatch(t, []string{"item1", "item2"}, testutils.ReadItems(called))
+		assert.ElementsMatch(t, []string{"item1", "item2"}, out)
 	})
 }
