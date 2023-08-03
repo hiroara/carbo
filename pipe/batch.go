@@ -6,24 +6,17 @@ import (
 	"github.com/hiroara/carbo/task"
 )
 
-// A Pipe task that makes a fixed size of batches.
+// A Pipe operator that makes a fixed size of batches.
 type BatchOp[S any] struct {
+	operator[S, []S]
 	size int
 }
 
-// Create a batch operator with the passed size.
+// Create a Batch operator.
 func Batch[S any](size int) *BatchOp[S] {
-	return &BatchOp[S]{size: size}
-}
-
-// Convert the batch operator as a Pipe.
-func (op *BatchOp[S]) AsPipe(opts ...task.Option) Pipe[S, []S] {
-	return FromFn(op.run, opts...)
-}
-
-// Convert the batch operator as a task.
-func (op *BatchOp[S]) AsTask() task.Task[S, []S] {
-	return op.AsPipe().AsTask()
+	op := &BatchOp[S]{size: size}
+	op.operator.run = op.run
+	return op
 }
 
 func (op *BatchOp[S]) run(ctx context.Context, in <-chan S, out chan<- []S) error {
