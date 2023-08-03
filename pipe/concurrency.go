@@ -9,6 +9,15 @@ import (
 	"github.com/hiroara/carbo/task"
 )
 
+type concurrency[S, T any] struct {
+	run PipeFn[S, T]
+}
+
+// Create a concurrent Pipe from multiple operators that have the same behavior.
+func (op *concurrency[S, T]) Concurrent(concurrency int, opts ...task.Option) Pipe[S, T] {
+	return ConcurrentFromFn(op.run, concurrency, opts...)
+}
+
 // Create a Pipe from multiple Pipes.
 // The passed Pipes will run concurrently, and those outputs will be merged as outputs of the created Pipe.
 func Concurrent[S, T any](ps []Pipe[S, T], opts ...task.Option) Pipe[S, T] {

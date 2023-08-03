@@ -10,6 +10,7 @@ import (
 // A Pipe task that processes an element and emits a corresponding output.
 type MapOp[S, T any] struct {
 	operator[S, T]
+	concurrency[S, T]
 	fn MapFn[S, T]
 }
 
@@ -20,12 +21,8 @@ type MapFn[S, T any] func(context.Context, S) (T, error)
 func Map[S, T any](fn MapFn[S, T]) *MapOp[S, T] {
 	op := &MapOp[S, T]{fn: fn}
 	op.operator.run = op.run
+	op.concurrency.run = op.run
 	return op
-}
-
-// Create a concurrent Pipe from multiple map operators that have the same behavior.
-func (op *MapOp[S, T]) Concurrent(concurrency int) Pipe[S, T] {
-	return ConcurrentFromFn(op.run, concurrency)
 }
 
 func (op *MapOp[S, T]) run(ctx context.Context, in <-chan S, out chan<- T) error {
