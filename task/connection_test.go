@@ -20,7 +20,7 @@ func TestConnectionRun(t *testing.T) {
 	outputs := make([]string, 0)
 	sink := sink.ToSlice(&outputs)
 
-	conn := task.Connect(src.AsTask(), sink.AsTask(), 1)
+	conn := task.Connect(src.AsTask(), sink.AsTask(), 0)
 
 	deferredCalled := false
 	conn.Defer(func() { deferredCalled = true })

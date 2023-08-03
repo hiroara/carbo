@@ -2,6 +2,7 @@ package task
 
 import (
 	"context"
+	"errors"
 
 	"golang.org/x/sync/errgroup"
 )
@@ -21,10 +22,12 @@ type Connection[S, M, T any] struct {
 }
 
 // Connect two tasks as a Connection.
-func Connect[S, M, T any](src Task[S, M], dest Task[M, T], buf int) Task[S, T] {
+func Connect[S, M, T any](src Task[S, M], dest Task[M, T], buf int, opts ...Option) Task[S, T] {
 	conn := &Connection[S, M, T]{Src: src, Dest: dest, srcOut: make(chan M, buf), destOut: make(chan T)}
-	return FromFn(conn.run)
+	return FromFn(conn.run, opts...)
 }
+
+var errDownstreamFinished = errors.New("a downstream task has finished")
 
 // Run two tasks that the Connection contains.
 func (conn *Connection[S, M, T]) run(ctx context.Context, in <-chan S, out chan<- T) error {
@@ -42,8 +45,12 @@ func (conn *Connection[S, M, T]) run(ctx context.Context, in <-chan S, out chan<
 				return err
 			}
 		}
-		return nil
+		return errDownstreamFinished
 	})
 
-	return grp.Wait()
+	err := grp.Wait()
+	if errors.Is(err, errDownstreamFinished) {
+		err = nil
+	}
+	return err
 }
