@@ -11,22 +11,22 @@ import (
 	"github.com/hiroara/carbo/sink"
 )
 
-func TestConcurrentSink(t *testing.T) {
+func runSink(s sink.Sink[string]) error {
+	in := make(chan string, 4)
+	out := make(chan struct{})
+	in <- "item1"
+	in <- "item2"
+	in <- "item3"
+	in <- "item4"
+	close(in)
+
+	return s.Run(context.Background(), in, out)
+}
+
+func TestConcurrent(t *testing.T) {
 	t.Parallel()
 
-	runSink := func(s sink.Sink[string]) error {
-		in := make(chan string, 4)
-		out := make(chan struct{})
-		in <- "item1"
-		in <- "item2"
-		in <- "item3"
-		in <- "item4"
-		close(in)
-
-		return s.Run(context.Background(), in, out)
-	}
-
-	t.Run("Concurrent", func(t *testing.T) {
+	t.Run("NormalCase", func(t *testing.T) {
 		t.Parallel()
 
 		sinkFn1, items1, called1 := createArraySink()
@@ -50,7 +50,19 @@ func TestConcurrentSink(t *testing.T) {
 		assert.ElementsMatch(t, []string{"item1", "item2", "item3", "item4"}, items)
 	})
 
-	t.Run("ConcurrentFromFn", func(t *testing.T) {
+	t.Run("NoConcurrentSinksCase", func(t *testing.T) {
+		t.Parallel()
+
+		assert.PanicsWithValue(
+			t,
+			"at least 1 concurrent sink is required",
+			func() { sink.Concurrent([]sink.Sink[string]{}) },
+		)
+	})
+}
+
+func TestConcurrentFromFn(t *testing.T) {
+	t.Run("NormalCase", func(t *testing.T) {
 		t.Parallel()
 
 		sinkFn, items, called := createArraySink()
@@ -64,5 +76,29 @@ func TestConcurrentSink(t *testing.T) {
 
 		assert.Len(t, testutils.ReadItems(called), 2)
 		assert.ElementsMatch(t, []string{"item1", "item2", "item3", "item4"}, testutils.ReadItems(items))
+	})
+
+	t.Run("ZeroConcurrencyCase", func(t *testing.T) {
+		t.Parallel()
+
+		fn, _, _ := createArraySink()
+
+		assert.PanicsWithValue(
+			t,
+			"at least 1 concurrent sink is required",
+			func() { sink.ConcurrentFromFn(fn, 0) },
+		)
+	})
+
+	t.Run("NegativeConcurrencyCase", func(t *testing.T) {
+		t.Parallel()
+
+		fn, _, _ := createArraySink()
+
+		assert.PanicsWithValue(
+			t,
+			"at least 1 concurrent sink is required",
+			func() { sink.ConcurrentFromFn(fn, -1) },
+		)
 	})
 }

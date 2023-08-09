@@ -82,4 +82,15 @@ func TestDuplicateOutChan(t *testing.T) {
 
 		require.Error(t, grp.Wait(), context.Canceled)
 	})
+
+	t.Run("ArgN=Zero", func(t *testing.T) {
+		t.Parallel()
+
+		out := make(chan string, 2)
+		assert.PanicsWithValue(
+			t,
+			"argument n must be a positive value but received 0",
+			func() { channel.DuplicateOutChan(out, 0) },
+		)
+	})
 }

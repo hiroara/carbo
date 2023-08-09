@@ -2,12 +2,17 @@ package channel
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 
 	"github.com/hiroara/carbo/task"
 )
 
 func DuplicateOutChan[T any](out chan<- T, n int) ([]chan<- T, func(context.Context) error) {
+	if n <= 0 {
+		panic(fmt.Sprintf("argument n must be a positive value but received %d", n))
+	}
+
 	outs := make([]chan<- T, n)
 	cases := make([]reflect.SelectCase, n)
 	for i := range outs {
