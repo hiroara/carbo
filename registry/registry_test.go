@@ -17,24 +17,34 @@ import (
 func TestRegistryRun(t *testing.T) {
 	t.Parallel()
 
-	r := registry.New()
+	t.Run("NormalCase", func(t *testing.T) {
+		t.Parallel()
 
-	src := source.FromSlice([]string{"item1", "item2"})
+		r := registry.New()
 
-	out := make([]string, 0)
-	sink := sink.ToSlice(&out)
-	conn := task.Connect(src.AsTask(), sink.AsTask(), 2)
-	called := false
+		src := source.FromSlice([]string{"item1", "item2"})
+		out := make([]string, 0)
+		sink := sink.ToSlice(&out)
+		conn := task.Connect(src.AsTask(), sink.AsTask(), 2)
+		called := false
 
-	r.Register("flow1", flow.NewFactory(func() (*flow.Flow, error) {
-		called = true
-		return flow.FromTask(conn), nil
-	}))
+		r.Register("flow1", flow.NewFactory(func() (*flow.Flow, error) {
+			called = true
+			return flow.FromTask(conn), nil
+		}))
 
-	err := r.Run(context.Background(), "flow1")
-	require.NoError(t, err)
+		err := r.Run(context.Background(), "flow1")
+		require.NoError(t, err)
 
-	if assert.True(t, called) {
-		assert.Equal(t, []string{"item1", "item2"}, out)
-	}
+		if assert.True(t, called) {
+			assert.Equal(t, []string{"item1", "item2"}, out)
+		}
+	})
+
+	t.Run("NoMatchingFlowCase", func(t *testing.T) {
+		t.Parallel()
+
+		r := registry.New()
+		assert.ErrorIs(t, r.Run(context.Background(), "unknown"), registry.ErrNoMatchingFlow)
+	})
 }
