@@ -15,41 +15,29 @@ import (
 //	M: Type of elements that are sent from Src to Dest
 //	T: Type of elements that are passed to a downstream task
 type Connection[S, M, T any] struct {
-	Src     Task[S, M] // The first task that is contained in this Connection.
-	Dest    Task[M, T] // The second task that is contained in this Connection.
-	srcOut  chan M
-	destOut chan T
+	Src  Task[S, M] // The first task that is contained in this Connection.
+	Dest Task[M, T] // The second task that is contained in this Connection.
+	c    chan M
 }
 
 // Connect two tasks as a Connection.
 func Connect[S, M, T any](src Task[S, M], dest Task[M, T], buf int, opts ...Option) Task[S, T] {
-	conn := &Connection[S, M, T]{Src: src, Dest: dest, srcOut: make(chan M, buf), destOut: make(chan T)}
+	conn := &Connection[S, M, T]{Src: src, Dest: dest, c: make(chan M, buf)}
 	return FromFn(conn.run, opts...)
 }
 
-var errDownstreamFinished = errors.New("a downstream task has finished")
+var ErrAbort = errors.New("connection aborted")
 
 // Run two tasks that the Connection contains.
 func (conn *Connection[S, M, T]) run(ctx context.Context, in <-chan S, out chan<- T) error {
-	grp, ctx := errgroup.WithContext(ctx)
+	grp, grpctx := errgroup.WithContext(ctx)
 
-	grp.Go(func() error { return conn.Src.Run(ctx, in, conn.srcOut) })
+	grp.Go(func() error { return conn.Src.Run(grpctx, in, conn.c) })
 
-	// destOut will be closed by Dest.
-	grp.Go(func() error { return conn.Dest.Run(ctx, conn.srcOut, conn.destOut) })
-
-	// out will be closed by *task.Run.
-	grp.Go(func() error {
-		for el := range conn.destOut {
-			if err := Emit(ctx, out, el); err != nil {
-				return err
-			}
-		}
-		return errDownstreamFinished
-	})
+	grp.Go(func() error { return conn.Dest.Run(ctx, conn.c, out) })
 
 	err := grp.Wait()
-	if errors.Is(err, errDownstreamFinished) {
+	if errors.Is(err, ErrAbort) {
 		err = nil
 	}
 	return err

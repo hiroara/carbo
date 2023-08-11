@@ -12,6 +12,7 @@ import (
 )
 
 var double = func(ctx context.Context, in <-chan string, out chan<- string) error {
+	defer close(out)
 	for el := range in {
 		if err := task.Emit(ctx, out, el+el); err != nil {
 			return err

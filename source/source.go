@@ -16,7 +16,8 @@ type Source[T any] task.Task[struct{}, T]
 
 // A function that defines a Source's behavior.
 // This function should send elements to the passed output channel.
-// Please note that this function should not close the output channel.
+// Please note that this function should not close the output channel
+// because source.FromFn automatically closes the channel.
 // The whole pipeline will be aborted when the returned error is not nil.
 type SourceFn[T any] func(ctx context.Context, out chan<- T) error
 
@@ -24,6 +25,7 @@ type SourceFn[T any] func(ctx context.Context, out chan<- T) error
 func FromFn[T any](fn SourceFn[T], opts ...task.Option) Source[T] {
 	return task.FromFn(func(ctx context.Context, in <-chan struct{}, out chan<- T) error {
 		<-in // Initial input channel will be closed immediately after starting the flow
+		defer close(out)
 		return fn(ctx, out)
 	}, opts...)
 }

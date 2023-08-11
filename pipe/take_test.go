@@ -19,7 +19,7 @@ func TestTake(t *testing.T) {
 	t.Run("MoreItems", func(t *testing.T) {
 		t.Parallel()
 
-		result, err := take(context.Background(), []string{"item1", "item2", "item3"})
+		result, err := take(context.Background(), []string{"item1", "item2", "item3", "item4", "item5"})
 		require.NoError(t, err)
 		assert.Equal(t, []string{"item1", "item2"}, result)
 	})

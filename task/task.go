@@ -51,7 +51,8 @@ type task[S, T any] struct {
 
 // A function that defines a Task's behavior.
 // For more details, please see the Run function defined as a part of the Task interface.
-// Please note that this function should not close the output channel.
+// Please note that this function should close the output channel when the task finishes
+// because task.FromFn does not automatically close the channel.
 // The whole pipeline will be aborted when the returned error is not nil.
 type TaskFn[S, T any] func(ctx context.Context, in <-chan S, out chan<- T) error
 
@@ -76,7 +77,6 @@ func (t *task[S, T]) Run(ctx context.Context, in <-chan S, out chan<- T) error {
 	defer t.RunDeferred()
 	ctx = metadata.WithName(ctx, t.name)
 	ctx, in, out = t.wrapInOut(ctx, in, out)
-	defer close(out)
 	if err := t.TaskFn(ctx, in, out); err != nil {
 		return err
 	}

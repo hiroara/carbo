@@ -16,12 +16,15 @@ type Sink[S any] task.Task[S, struct{}]
 
 // A function that defines a Sink's behavior.
 // This function should receive elements via the passed input channel.
+// Please note that this function should not close the passed channel
+// because closing the input channel is the upstream task's responsibility.
 // The whole pipeline will be aborted when the returned error is not nil.
 type SinkFn[S any] func(ctx context.Context, in <-chan S) error
 
 // Build a Sink with a SinkFn.
 func FromFn[S any](fn SinkFn[S], opts ...task.Option) Sink[S] {
 	return task.FromFn(func(ctx context.Context, in <-chan S, out chan<- struct{}) error {
+		defer close(out)
 		return fn(ctx, in)
 	}, opts...)
 }
