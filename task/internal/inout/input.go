@@ -36,7 +36,10 @@ func (in *Input[T]) passThrough(ctx context.Context) (bool, error) {
 		return false, context.Cause(ctx)
 	case el, ok := <-in.src:
 		if ok {
-			in.dest <- el
+			select {
+			case <-ctx.Done():
+			case in.dest <- el:
+			}
 		}
 		return ok, nil
 	}

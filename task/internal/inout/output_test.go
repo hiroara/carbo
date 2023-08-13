@@ -24,10 +24,16 @@ func TestOutput(t *testing.T) {
 		src <- "string2"
 	}()
 
-	_ = inout.StartWithContext[string](context.Background(), out)
+	checked := make(chan struct{})
+	go func() {
+		defer close(checked)
 
-	assert.Equal(t, "string1", <-dest)
-	assert.Equal(t, "string2", <-dest)
+		assert.Equal(t, "string1", <-dest)
+		assert.Equal(t, "string2", <-dest)
+	}()
+
+	require.NoError(t, inout.StartWithContext[string](context.Background(), out))
+	<-checked // Wait until consumer goroutine is done
 }
 
 func TestOutputWithTimeout(t *testing.T) {
@@ -42,17 +48,12 @@ func TestOutputWithTimeout(t *testing.T) {
 		<-dest
 	}()
 
-	ctx := context.Background()
-	ctx = inout.StartWithContext[string](ctx, out)
-
 	src := out.Chan()
-	src <- "item1"
-	close(src)
+	go func() {
+		defer close(src)
+		src <- "item1"
+	}()
 
-	select {
-	case <-ctx.Done(): // Returned context is canceled when timeout is exceeded.
-		assert.ErrorIs(t, ctx.Err(), context.Canceled)
-	case <-time.After(time.Second):
-		require.Fail(t, "Test timeout")
-	}
+	err := inout.StartWithContext[string](context.Background(), out)
+	assert.ErrorIs(t, err, context.DeadlineExceeded)
 }

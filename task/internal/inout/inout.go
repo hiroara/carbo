@@ -15,18 +15,12 @@ type Options struct {
 	Timeout time.Duration
 }
 
-func StartWithContext[T any](ctx context.Context, io InOut[T]) context.Context {
-	ctx, cancel := context.WithCancelCause(ctx)
-	go func() {
-		defer io.Close()
-		ok := true
-		var err error
-		for ok {
-			ok, err = io.passThrough(ctx)
-		}
-		if err != nil {
-			cancel(err)
-		}
-	}()
-	return ctx
+func StartWithContext[T any](ctx context.Context, io InOut[T]) error {
+	defer io.Close()
+	ok := true
+	var err error
+	for ok {
+		ok, err = io.passThrough(ctx)
+	}
+	return err
 }

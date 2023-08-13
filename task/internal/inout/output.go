@@ -26,9 +26,15 @@ func (out *Output[T]) Close() error {
 }
 
 func (out *Output[T]) passThrough(ctx context.Context) (bool, error) {
-	el, ok := <-out.src
-	if !ok {
-		return false, nil
+	var el T
+	var ok bool
+	select {
+	case <-ctx.Done():
+		return false, context.Cause(ctx)
+	case el, ok = <-out.src:
+		if !ok {
+			return false, nil
+		}
 	}
 
 	cancel := func() {}
@@ -40,6 +46,6 @@ func (out *Output[T]) passThrough(ctx context.Context) (bool, error) {
 	case <-ctx.Done():
 		return false, context.Cause(ctx)
 	case out.dest <- el:
-		return ok, nil
+		return true, nil
 	}
 }

@@ -2,7 +2,6 @@ package inout_test
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -19,19 +18,25 @@ func TestInput(t *testing.T) {
 	in := inout.NewInput(src, nil)
 	dest := in.Chan()
 
-	_ = inout.StartWithContext[string](context.Background(), in)
-
 	go func() {
 		defer close(src)
 		src <- "string1"
 		src <- "string2"
 	}()
 
-	out := make([]string, 0)
-	for el := range dest {
-		out = append(out, el)
-	}
-	assert.Equal(t, []string{"string1", "string2"}, out)
+	checked := make(chan struct{})
+	go func() {
+		defer close(checked)
+
+		out := make([]string, 0)
+		for el := range dest {
+			out = append(out, el)
+		}
+		assert.Equal(t, []string{"string1", "string2"}, out)
+	}()
+
+	require.NoError(t, inout.StartWithContext[string](context.Background(), in))
+	<-checked // Wait until consumer goroutine is done
 }
 
 func TestInputWithTimeout(t *testing.T) {
@@ -48,18 +53,9 @@ func TestInputWithTimeout(t *testing.T) {
 		src <- "string1"
 	}()
 
-	ctx := context.Background()
-	ctx = inout.StartWithContext[string](ctx, in)
+	err := inout.StartWithContext[string](context.Background(), in)
+	assert.ErrorIs(t, err, context.DeadlineExceeded)
 
-	for {
-		select {
-		case el := <-dest:
-			require.Fail(t, fmt.Sprintf("Test timeout (received %s)", el))
-		case <-ctx.Done(): // Timeout by input option
-			assert.ErrorIs(t, context.Cause(ctx), context.DeadlineExceeded)
-			return
-		case <-time.After(1 * time.Second):
-			require.Fail(t, "Test timeout")
-		}
-	}
+	_, ok := <-dest
+	assert.False(t, ok)
 }

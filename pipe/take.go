@@ -27,7 +27,7 @@ func (op *TakeOp[S]) run(ctx context.Context, in <-chan S, out chan<- S) error {
 		}
 		c += 1
 		if c == op.n {
-			return task.ErrAbort
+			break
 		}
 	}
 	return nil

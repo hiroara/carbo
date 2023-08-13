@@ -3,6 +3,8 @@ package task
 import (
 	"context"
 
+	"golang.org/x/sync/errgroup"
+
 	"github.com/hiroara/carbo/deferrer"
 	"github.com/hiroara/carbo/task/internal/inout"
 	"github.com/hiroara/carbo/task/internal/metadata"
@@ -76,17 +78,26 @@ var GetName = metadata.GetName
 func (t *task[S, T]) Run(ctx context.Context, in <-chan S, out chan<- T) error {
 	defer t.RunDeferred()
 	ctx = metadata.WithName(ctx, t.name)
-	ctx, in, out = t.wrapInOut(ctx, in, out)
-	if err := t.TaskFn(ctx, in, out); err != nil {
-		return err
-	}
-	return context.Cause(ctx)
-}
 
-func (t *task[S, T]) wrapInOut(ctx context.Context, in <-chan S, out chan<- T) (context.Context, <-chan S, chan<- T) {
+	grp, ctx := errgroup.WithContext(ctx)
+
 	ip := inout.NewInput(in, newOptions(t.inOpts))
 	op := inout.NewOutput(out, newOptions(t.outOpts))
-	ctx = inout.StartWithContext[S](ctx, ip)
-	ctx = inout.StartWithContext[T](ctx, op)
-	return ctx, ip.Chan(), op.Chan()
+
+	grp.Go(func() error {
+		err := inout.StartWithContext[S](ctx, ip)
+		return ignoreIfErrDownstreamFinished(err)
+	})
+
+	grp.Go(func() error {
+		err := t.TaskFn(ctx, ip.Chan(), op.Chan())
+		return ignoreIfErrDownstreamFinished(err)
+	})
+
+	grp.Go(func() error {
+		err := inout.StartWithContext[T](ctx, op)
+		return ignoreIfErrDownstreamFinished(err)
+	})
+
+	return grp.Wait()
 }

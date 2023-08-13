@@ -26,19 +26,44 @@ func Connect[S, M, T any](src Task[S, M], dest Task[M, T], buf int, opts ...Opti
 	return FromFn(conn.run, opts...)
 }
 
-var ErrAbort = errors.New("connection aborted")
+var errDownstreamFinished = errors.New("a downstream task has finished")
+
+func ignoreIfErrDownstreamFinished(err error) error {
+	if errors.Is(err, errDownstreamFinished) {
+		return nil
+	}
+	return err
+}
 
 // Run two tasks that the Connection contains.
 func (conn *Connection[S, M, T]) run(ctx context.Context, in <-chan S, out chan<- T) error {
-	grp, grpctx := errgroup.WithContext(ctx)
+	grp, ctx := errgroup.WithContext(ctx)
+	grp.SetLimit(2)
 
-	grp.Go(func() error { return conn.Src.Run(grpctx, in, conn.c) })
+	srcCtx, cancel := context.WithCancelCause(ctx)
 
-	grp.Go(func() error { return conn.Dest.Run(ctx, conn.c, out) })
+	destDone := make(chan struct{})
 
-	err := grp.Wait()
-	if errors.Is(err, ErrAbort) {
-		err = nil
-	}
-	return err
+	grp.Go(func() error {
+		err := conn.Src.Run(srcCtx, in, conn.c)
+		return ignoreIfErrDownstreamFinished(err)
+	})
+
+	grp.Go(func() error {
+		defer close(destDone)
+		err := conn.Dest.Run(ctx, conn.c, out)
+		return ignoreIfErrDownstreamFinished(err)
+	})
+
+	grp.Go(func() error {
+		select {
+		case <-ctx.Done():
+		case <-destDone:
+			// Call cancel if Dest finished early
+			cancel(errDownstreamFinished)
+		}
+		return nil
+	})
+
+	return grp.Wait()
 }
