@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/hiroara/carbo/task/internal/inout"
 )
@@ -23,7 +24,7 @@ func TestOutput(t *testing.T) {
 		src <- "string2"
 	}()
 
-	_ = out.StartWithContext(context.Background())
+	_ = inout.StartWithContext[string](context.Background(), out)
 
 	assert.Equal(t, "string1", <-dest)
 	assert.Equal(t, "string2", <-dest)
@@ -34,19 +35,24 @@ func TestOutputWithTimeout(t *testing.T) {
 
 	dest := make(chan string)
 	out := inout.NewOutput(dest, &inout.Options{Timeout: 1 * time.Nanosecond})
-	src := out.Chan()
 
+	// Slow downstream
 	go func() {
-		defer close(src)
-		time.Sleep(1 * time.Second)
-		src <- "string1"
+		time.Sleep(10 * time.Second)
+		<-dest
 	}()
 
 	ctx := context.Background()
-	ctx = out.StartWithContext(ctx)
+	ctx = inout.StartWithContext[string](ctx, out)
 
-	_, ok := <-dest
-	assert.False(t, ok)
+	src := out.Chan()
+	src <- "item1"
+	close(src)
 
-	<-ctx.Done() // Returned context is canceled when timeout is exceeded.
+	select {
+	case <-ctx.Done(): // Returned context is canceled when timeout is exceeded.
+		assert.ErrorIs(t, ctx.Err(), context.Canceled)
+	case <-time.After(time.Second):
+		require.Fail(t, "Test timeout")
+	}
 }

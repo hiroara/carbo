@@ -2,6 +2,7 @@ package inout_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -18,7 +19,7 @@ func TestInput(t *testing.T) {
 	in := inout.NewInput(src, nil)
 	dest := in.Chan()
 
-	_ = in.StartWithContext(context.Background())
+	_ = inout.StartWithContext[string](context.Background(), in)
 
 	go func() {
 		defer close(src)
@@ -40,26 +41,24 @@ func TestInputWithTimeout(t *testing.T) {
 	in := inout.NewInput(src, &inout.Options{Timeout: 1 * time.Nanosecond})
 	dest := in.Chan()
 
-	out := make([]string, 0)
+	// Slow upstream
 	go func() {
 		defer close(src)
-		time.Sleep(1 * time.Second)
-		for el := range dest {
-			out = append(out, el)
-		}
+		time.Sleep(10 * time.Second)
+		src <- "string1"
 	}()
 
 	ctx := context.Background()
-	ctx = in.StartWithContext(ctx)
+	ctx = inout.StartWithContext[string](ctx, in)
 
-	timeout := time.After(10 * time.Second)
 	for {
 		select {
-		case src <- "string1":
+		case el := <-dest:
+			require.Fail(t, fmt.Sprintf("Test timeout (received %s)", el))
 		case <-ctx.Done(): // Timeout by input option
 			assert.ErrorIs(t, context.Cause(ctx), context.DeadlineExceeded)
 			return
-		case <-timeout:
+		case <-time.After(1 * time.Second):
 			require.Fail(t, "Test timeout")
 		}
 	}

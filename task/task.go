@@ -86,7 +86,7 @@ func (t *task[S, T]) Run(ctx context.Context, in <-chan S, out chan<- T) error {
 func (t *task[S, T]) wrapInOut(ctx context.Context, in <-chan S, out chan<- T) (context.Context, <-chan S, chan<- T) {
 	ip := inout.NewInput(in, newOptions(t.inOpts))
 	op := inout.NewOutput(out, newOptions(t.outOpts))
-	ctx = ip.StartWithContext(ctx)
-	ctx = op.StartWithContext(ctx)
+	ctx = inout.StartWithContext[S](ctx, ip)
+	ctx = inout.StartWithContext[T](ctx, op)
 	return ctx, ip.Chan(), op.Chan()
 }
