@@ -15,6 +15,10 @@ Carbo would fit such a case. It is a pure Golang implementation that helps run s
 
 Additionally, Carbo also provides an easy way to feed data from one process to another with gRPC. This way provides enough scalability in many cases.
 
+## Documentation
+
+https://pkg.go.dev/github.com/hiroara/carbo
+
 ## Exposing / pulling data through gRPC
 
 As described above, Carbo provides an easy way to feed data from one process to another with gRPC.
