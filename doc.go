@@ -1,23 +1,49 @@
 /*
-Carbo is a package that contains a framework for Gophers to provide a way to build a data pipeline.
+Carbo provides building blocks to compose data processing pipeline with concurrency.
 
-There are multiple headaches when building an application containing a data pipeline, like controlling concurrency, scalability, back pressure, etc.
-This framework is built to deal with these issues without much effort.
+Carbo's core component is task.Task, which represents a process that takes inputs and outputs.
 
-# Why Carbo?
+You can build an entire build pipeline with a number of tasks.
 
-As far as I know, there are many great frameworks to control tasks and those dependencies in complex workflows, and such a tool also provides a way to monitor tasks' situations.
-But, there are cases where a programmer thinks configuring a cluster and running a large number of tasks there can be overkill.
-Carbo would fit such a case. It is a pure Golang implementation that helps run small tasks in a process with easy control of concurrencies.
-Additionally, Carbo also provides an easy way to feed data from one process to another with gRPC. This way provides enough scalability in many cases.
+Althouogh it is possible to define a task directly with task.FromFn, it is recommended to use sub-types of task.Task: source, pipe and sink.
 
-# Exposing / pulling data through gRPC
+# Sub-types of task.Task
 
-As described above, Carbo provides an easy way to feed data from one process to another with gRPC.
-In this way, for example, you can separate a data pipeline into a CPU-intensive part and an IO-intensive part as different processes, and run it with a different concurrency limit.
+A data pipeline is built with three sub-types of task.Task: source, pipe and sink.
 
-Additionally, this means that Carbo doesn't necessarily force you to stick to this framework itself or even Golang, thanks to the programming language-agnostic RPC protocol, gRPC.
-For example, you can pull data from a Golang process that uses Carbo with grpcurl for debugging.
-Or, you can also write another program, for example, in Python, to pull data via gRPC. This is convenient, for example, when you want to write a fast data pipeline in Golang and feed the output into Python to build a machine-learning model with scikit-learn.
+The basic form of a data pipeline should look like: sink -> pipe -> ... -> pipe -> sink
+
+# Source
+
+A source is a special type of task.Task that takes an empty input that will be closed immediately after a data pipeline starts.
+
+This is used as an entry point of a data pipeline.
+For example, source.FromSlice takes a slice as an argument, and then produces each element of the slice as its outputs.
+
+# Pipe
+
+A pipe is a similar component to task.Task, except the passed output channel is closed automatically after its process is finished.
+
+This is used to convert inputs into outputs.
+For example, pipe.Map processes inputs one by one, and produces corresponding outputs.
+This can be used in case an input and an output has one-to-one correspondence.
+
+# Sink
+
+A sink is a special type of task.Task that takes an empty output. This is just like an opposite of a source.
+
+This is used as an last component of a data pipeline.
+For example, sink.ToSlice takes a pointer to a slice, and appends elements from its inputs.
+
+# Connecting tasks
+
+Each task can be connected with another one using task.Connect if the type of an upstream task's output and the type of a downstream task's input match.
+
+task.Connect also returns task.Task so it can be chained. An entire data pipeline can be built by connecting multiple tasks in this way.
+
+# Running a data pipeline
+
+Carbo has a Flow component which is a wrapper of a task that takes an empty input and an empty output.
+This kind of task is typically built as a chain of tasks that starts from a source and ends with a sink.
 */
 package carbo
