@@ -11,7 +11,7 @@ Althouogh it is possible to define a task directly with task.FromFn, it is recom
 
 A data pipeline is built with three sub-types of task.Task: source, pipe and sink.
 
-The basic form of a data pipeline should look like: sink -> pipe -> ... -> pipe -> sink
+The basic form of a data pipeline should look like: source -> pipe -> ... -> pipe -> sink
 
 # Source
 
