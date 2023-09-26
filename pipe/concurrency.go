@@ -31,9 +31,7 @@ func Concurrent[S, T any](ps []Pipe[S, T], opts ...task.Option) Pipe[S, T] {
 		for i := range ps {
 			p := ps[i]
 			o := outs[i]
-			grp.Go(func() error {
-				return p.Run(ctx, in, o)
-			})
+			grp.Go(func() error { return p.Run(ctx, in, o) })
 		}
 		grp.Go(func() error { return agg(ctx) })
 		return grp.Wait()

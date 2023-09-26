@@ -8,18 +8,25 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/hiroara/carbo/pipe"
+	"github.com/hiroara/carbo/task"
 )
 
-func double(s string) string {
-	return s + s
+func double(ctx context.Context, s string) (string, error) {
+	return s + s, nil
 }
 
-func createPipeFn(fn func(string) string) (pipe.PipeFn[string, string], chan struct{}) {
+func createPipeFn(fn func(context.Context, string) (string, error)) (pipe.PipeFn[string, string], chan struct{}) {
 	called := make(chan struct{}, 2)
 	pipeFn := func(ctx context.Context, in <-chan string, out chan<- string) error {
 		called <- struct{}{}
 		for i := range in {
-			out <- fn(i)
+			el, err := fn(ctx, i)
+			if err != nil {
+				return err
+			}
+			if err := task.Emit(ctx, out, el); err != nil {
+				return err
+			}
 		}
 		return nil
 	}

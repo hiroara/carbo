@@ -2,6 +2,7 @@ package pipe_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -9,23 +10,16 @@ import (
 
 	"github.com/hiroara/carbo/internal/testutils"
 	"github.com/hiroara/carbo/pipe"
+	"github.com/hiroara/carbo/task"
+	"github.com/hiroara/carbo/taskfn"
 )
 
 func assertConcurrentPipe(t *testing.T, p pipe.Pipe[string, string]) {
-	in := make(chan string, 2)
-	out := make(chan string, 2)
-	in <- "item1"
-	in <- "item2"
-	close(in)
-
-	err := p.Run(context.Background(), in, out)
+	ctx := context.Background()
+	out, err := taskfn.SliceToSlice(p.AsTask())(ctx, []string{"item1", "item2"})
 	require.NoError(t, err)
 
-	outputs := make([]string, 0)
-	for item := range out {
-		outputs = append(outputs, item)
-	}
-	assert.ElementsMatch(t, []string{"item1item1", "item2item2"}, outputs)
+	assert.ElementsMatch(t, []string{"item1item1", "item2item2"}, out)
 }
 
 func TestConcurrent(t *testing.T) {
@@ -47,6 +41,30 @@ func TestConcurrent(t *testing.T) {
 
 		assert.Len(t, testutils.ReadItems(called1), 1)
 		assert.Len(t, testutils.ReadItems(called2), 1)
+	})
+
+	t.Run("ErrorCase", func(t *testing.T) {
+		t.Parallel()
+
+		errFromTask := errors.New("test error")
+
+		pipeFn1, called1 := createPipeFn(func(ctx context.Context, s string) (string, error) {
+			return "", errFromTask
+		})
+		pipeFn2, called2 := createPipeFn(func(ctx context.Context, s string) (string, error) {
+			return "", errFromTask
+		})
+
+		defer close(called1)
+		defer close(called2)
+
+		p := pipe.Concurrent([]pipe.Pipe[string, string]{
+			pipe.FromFn(pipeFn1, task.WithName("pipeFn1")),
+			pipe.FromFn(pipeFn2, task.WithName("pipeFn2")),
+		})
+
+		_, err := taskfn.SliceToSlice(p.AsTask())(context.Background(), []string{"item1", "item2"})
+		assert.ErrorIs(t, err, errFromTask)
 	})
 
 	t.Run("NoConcurrentPipesCase", func(t *testing.T) {
