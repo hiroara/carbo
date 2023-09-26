@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"reflect"
+	"sync"
 
 	"golang.org/x/sync/errgroup"
 
@@ -61,17 +62,52 @@ func (op *FanoutOp[S, I, T]) Add(t task.Task[S, I], inBuffer, outBuffer int) {
 
 // Run this fanout operator.
 func (op *FanoutOp[S, I, T]) run(ctx context.Context, in <-chan S, out chan<- T) error {
+	parentCtx := ctx
+
 	grp, ctx := errgroup.WithContext(ctx)
-	grp.Go(func() error { return op.feed(in) })
+	grp.Go(func() error { return op.feed(ctx, in) })
+
+	var stErr error
+	mutex := &sync.Mutex{}
+	recordStErr := func(err error) error {
+		mutex.Lock()
+		defer mutex.Unlock()
+		if err == nil || stErr != nil {
+			return nil
+		}
+		if errors.Is(err, errUnmatchingLength) {
+			return nil
+		}
+		stErr = err
+		return err
+	}
+
 	for i := range op.tasks {
 		ic := i
-		grp.Go(func() error { return op.runTask(ctx, ic) })
+		grp.Go(func() error {
+			return recordStErr(op.runTask(ctx, ic))
+		})
 	}
+
 	grp.Go(func() error { return op.emit(ctx, out) })
-	return grp.Wait()
+
+	err := grp.Wait()
+
+	// Check why errUnmatchingLength has been thrown
+	if errors.Is(err, errUnmatchingLength) {
+		if parentErr := context.Cause(parentCtx); parentErr != nil {
+			// If this op has been cancelled by parent, propagate the cause
+			err = parentErr
+		} else if stErr != nil {
+			// Check if a subtask is the cause.
+			err = stErr
+		}
+	}
+
+	return err
 }
 
-func (op *FanoutOp[S, I, T]) feed(in <-chan S) error {
+func (op *FanoutOp[S, I, T]) feed(ctx context.Context, in <-chan S) error {
 	defer func() {
 		for _, ic := range op.inputs {
 			close(ic)
@@ -86,8 +122,15 @@ func (op *FanoutOp[S, I, T]) feed(in <-chan S) error {
 				Send: reflect.ValueOf(el),
 			}
 		}
+		doneCase := reflect.SelectCase{
+			Dir:  reflect.SelectRecv,
+			Chan: reflect.ValueOf(ctx.Done()),
+		}
 		for len(cases) > 0 {
-			chosen, _, _ := reflect.Select(cases)
+			chosen, _, _ := reflect.Select(append(cases, doneCase))
+			if chosen == len(cases) { // ctx.Done()
+				return context.Cause(ctx)
+			}
 			cases = append(cases[:chosen], cases[chosen+1:]...)
 		}
 	}
