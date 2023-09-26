@@ -6,8 +6,8 @@ cd $(dirname $0)/..
 
 CONTAINER_OPTIONS="--rm"
 
-if [ "$NO_TTY" != "1" ]; then
-  CONTAINER_OPTIONS="$CONTAINER_OPTIONS -it"
+if [ "$NO_TTY" == "1" ]; then
+  CONTAINER_OPTIONS="$CONTAINER_OPTIONS -T"
 fi
 
 docker compose run $CONTAINER_OPTIONS toolkit "$@"
