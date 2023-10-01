@@ -10,17 +10,15 @@ import (
 
 	"github.com/hiroara/carbo/cache"
 	"github.com/hiroara/carbo/cache/store"
-	"github.com/hiroara/carbo/flow"
 	"github.com/hiroara/carbo/pipe"
-	"github.com/hiroara/carbo/sink"
-	"github.com/hiroara/carbo/source"
 	"github.com/hiroara/carbo/task"
+	"github.com/hiroara/carbo/taskfn"
 )
 
 func TestMap(t *testing.T) {
 	t.Parallel()
 
-	src := source.FromSlice([]string{"item1", "item2", "item2"})
+	els := []string{"item1", "item2", "item2"}
 
 	fn := func(ctx context.Context, s string) (string, error) {
 		return s + s, nil
@@ -28,18 +26,8 @@ func TestMap(t *testing.T) {
 	m := pipe.Map(fn)
 
 	runFlowWithMap := func(mappingTask task.Task[string, string]) ([]string, error) {
-		out := make([]string, 0)
-		sin := sink.ToSlice(&out)
-
-		mapped := task.Connect(src.AsTask(), mappingTask, 0)
-		toSlice := task.Connect(mapped, sin.AsTask(), 2)
-
-		err := flow.FromTask(toSlice).Run(context.Background())
-		if err != nil {
-			return nil, err
-		}
-
-		return out, nil
+		tfn := taskfn.SliceToSlice(mappingTask)
+		return tfn(context.Background(), els)
 	}
 
 	t.Run("ErrorCase", func(t *testing.T) {
@@ -68,6 +56,23 @@ func TestMap(t *testing.T) {
 		require.NoError(t, err)
 
 		assert.ElementsMatch(t, []string{"item1item1", "item2item2", "item2item2"}, out)
+	})
+
+	t.Run("ConcurrentPreservingOrder", func(t *testing.T) {
+		t.Parallel()
+
+		m := pipe.Map(fn)
+		tfn := taskfn.SliceToSlice(m.ConcurrentPreservingOrder(2).AsTask())
+		els := []string{"item1", "item2", "item3", "item4", "item5", "item6", "item7", "item8", "item9", "item10"}
+		out, err := tfn(context.Background(), els)
+		require.NoError(t, err)
+
+		expected := make([]string, len(els))
+		for i, el := range els {
+			expected[i] = el + el
+		}
+
+		assert.Equal(t, expected, out)
 	})
 
 	t.Run("Cache", func(t *testing.T) {

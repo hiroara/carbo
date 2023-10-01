@@ -14,12 +14,18 @@ type concurrency[S, T any] struct {
 }
 
 // Create a concurrent Pipe from multiple operators that have the same behavior.
+//
+// Each input is processed whenever it is possible.
+// For this reason, the concurrent Pipe doesn't preserve the order.
 func (op *concurrency[S, T]) Concurrent(concurrency int, opts ...task.Option) Pipe[S, T] {
 	return ConcurrentFromFn(op.run, concurrency, opts...)
 }
 
 // Create a Pipe from multiple Pipes.
 // The passed Pipes will run concurrently, and those outputs will be merged as outputs of the created Pipe.
+//
+// Each input is processed whenever it is possible.
+// For this reason, the concurrent Pipe doesn't preserve the order.
 func Concurrent[S, T any](ps []Pipe[S, T], opts ...task.Option) Pipe[S, T] {
 	if len(ps) == 0 {
 		panic("at least 1 concurrent pipe is required")
