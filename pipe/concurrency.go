@@ -13,6 +13,17 @@ type concurrency[S, T any] struct {
 	run PipeFn[S, T]
 }
 
+type contextKey int
+
+const concurrencyIndex contextKey = iota
+
+func ConcurrencyIndex(ctx context.Context) int {
+	if v, ok := ctx.Value(concurrencyIndex).(int); ok {
+		return v
+	}
+	return -1
+}
+
 // Create a concurrent Pipe from multiple operators that have the same behavior.
 //
 // Each input is processed whenever it is possible.
@@ -37,6 +48,9 @@ func Concurrent[S, T any](ps []Pipe[S, T], opts ...task.Option) Pipe[S, T] {
 		for i := range ps {
 			p := ps[i]
 			o := outs[i]
+
+			ctx := context.WithValue(ctx, concurrencyIndex, i)
+
 			grp.Go(func() error { return p.Run(ctx, in, o) })
 		}
 		grp.Go(func() error { return agg(ctx) })

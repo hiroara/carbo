@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"strconv"
 	"testing"
 	"time"
 
@@ -64,7 +65,6 @@ func TestMap(t *testing.T) {
 	t.Run("ConcurrentPreservingOrder", func(t *testing.T) {
 		t.Parallel()
 
-		m := pipe.Map(doubleString)
 		tfn := taskfn.SliceToSlice(m.ConcurrentPreservingOrder(2).AsTask())
 		els := []string{"item1", "item2", "item3", "item4", "item5", "item6", "item7", "item8", "item9", "item10"}
 		out, err := tfn(context.Background(), els)
@@ -76,6 +76,39 @@ func TestMap(t *testing.T) {
 		}
 
 		assert.Equal(t, expected, out)
+	})
+
+	t.Run("StickyConcurrentPreservingOrder", func(t *testing.T) {
+		t.Parallel()
+
+		concurrency := 2
+
+		logs := make([][]string, concurrency)
+		for i := range logs {
+			logs[i] = make([]string, 0)
+		}
+
+		m := pipe.Map(func(ctx context.Context, s string) (string, error) {
+			logs[pipe.ConcurrencyIndex(ctx)] = append(logs[pipe.ConcurrencyIndex(ctx)], s)
+			return doubleString(ctx, s)
+		})
+		bucket := func(s string) int {
+			i, _ := strconv.ParseInt(s[4:], 10, 32)
+			return int(i) % concurrency
+		}
+		tfn := taskfn.SliceToSlice(m.StickyConcurrentPreservingOrder(bucket, concurrency).AsTask())
+		els := []string{"item1", "item2", "item3", "item4", "item5", "item6", "item7", "item8", "item9", "item10"}
+		out, err := tfn(context.Background(), els)
+		require.NoError(t, err)
+
+		expected := make([]string, len(els))
+		for i, el := range els {
+			expected[i] = el + el
+		}
+
+		assert.Equal(t, expected, out)
+		assert.ElementsMatch(t, []string{"item2", "item4", "item6", "item8", "item10"}, logs[0])
+		assert.ElementsMatch(t, []string{"item1", "item3", "item5", "item7", "item9"}, logs[1])
 	})
 
 	t.Run("Cache", func(t *testing.T) {
