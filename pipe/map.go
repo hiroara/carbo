@@ -3,6 +3,7 @@ package pipe
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	"golang.org/x/sync/errgroup"
 
@@ -87,7 +88,7 @@ func duplicateOutChanPreservingOrder[S, T any](
 	outsRet := make([]chan<- T, n)
 	for idx := 0; idx < n; idx++ {
 		i := make(chan S)
-		o := make(chan T)
+		o := make(chan T, n)
 		ins[idx] = i
 		insRet[idx] = i
 		outs[idx] = o
@@ -96,24 +97,55 @@ func duplicateOutChanPreservingOrder[S, T any](
 	return insRet, outsRet, func(ctx context.Context) error {
 		grp, ctx := errgroup.WithContext(ctx)
 
+		idx := make(chan int, n)
+
 		grp.Go(func() error {
 			defer func() {
+				close(idx)
+
 				for _, i := range ins {
 					close(i)
 				}
 			}()
-			idx := 0
-			for el := range in {
-				ins[idx] <- el
-				idx = (idx + 1) % n
+
+			cases := make([]reflect.SelectCase, 0, len(ins)+1)
+
+			cases = append(cases, reflect.SelectCase{
+				Dir:  reflect.SelectRecv,
+				Chan: reflect.ValueOf(ctx.Done()),
+			})
+
+			for _, c := range ins {
+				cases = append(cases, reflect.SelectCase{
+					Dir:  reflect.SelectSend,
+					Chan: reflect.ValueOf(c),
+				})
 			}
+
+			for el := range in {
+				for i := range cases[1:] {
+					cases[i+1].Send = reflect.ValueOf(el)
+				}
+
+				chosen, _, _ := reflect.Select(cases)
+
+				if chosen == 0 {
+					return context.Cause(ctx)
+				}
+
+				idx <- chosen - 1 // -1 because the first case is ctx.Done()
+			}
+
 			return nil
 		})
 
 		grp.Go(func() error {
 			for {
-				for _, o := range outs {
-					el, ok := <-o
+				select {
+				case <-ctx.Done():
+					return context.Cause(ctx)
+				case i := <-idx:
+					el, ok := <-outs[i]
 					if !ok {
 						return nil
 					}
