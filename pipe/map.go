@@ -65,7 +65,11 @@ func (op *MapOp[S, T]) ConcurrentPreservingOrder(concurrency int, opts ...task.O
 // A concurrent Pipe created with this method preserves the order of elements like ConcurrentPreservingOrder.
 // And, it additionally allows you to specify which pipe to be used for each element by providing the bucket function.
 // Use pipe.ConcurrencyIndex to get the index of the current pipe.
-func (op *MapOp[S, T]) StickyConcurrentPreservingOrder(bucket func(S) int, concurrency int, opts ...task.Option) Pipe[S, T] {
+func (op *MapOp[S, T]) StickyConcurrentPreservingOrder(
+	bucket func(S) int,
+	concurrency int,
+	opts ...task.Option,
+) Pipe[S, T] {
 	return op.concurrentPreservingOrder(
 		concurrency,
 		func(ctx context.Context, idx chan<- int, in <-chan S, outs []chan<- S) error {

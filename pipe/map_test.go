@@ -22,6 +22,7 @@ import (
 func doubleString(ctx context.Context, s string) (string, error) {
 	return s + s, nil
 }
+
 func TestMap(t *testing.T) {
 	t.Parallel()
 
@@ -138,7 +139,7 @@ func TestMap(t *testing.T) {
 }
 
 func doubleStringWithSleep(ctx context.Context, s string) (string, error) {
-	time.Sleep(time.Duration(rand.Float64()*100) * time.Microsecond)
+	time.Sleep(time.Duration(rand.Float64()*100) * time.Microsecond) //nolint:gosec
 	return doubleString(ctx, s)
 }
 
@@ -155,7 +156,7 @@ func BenchmarkMap(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		tfn(context.Background(), els)
+		_, _ = tfn(context.Background(), els)
 	}
 }
 
@@ -170,7 +171,7 @@ func BenchmarkMapConcurrent(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		tfn(context.Background(), els)
+		_, _ = tfn(context.Background(), els)
 	}
 }
 
@@ -185,6 +186,6 @@ func BenchmarkMapConcurrentPreservingOrder(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		tfn(context.Background(), els)
+		_, _ = tfn(context.Background(), els)
 	}
 }
